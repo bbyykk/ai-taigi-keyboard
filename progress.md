@@ -12,3 +12,4 @@
 - Task closed: documentation requested by the user is complete and linked from the documentation index.
 - Added the native IBus Python/GObject adapter (`ibus/ibus-taigi`) and component descriptor, installed them under `/usr/libexec` and `/usr/share/ibus/component`, and validated Python syntax plus startup under a temporary D-Bus/IBus session.
 - Added IBus `--xml` discovery output, refreshed the system engine cache, and documented the Ubuntu-native activation path.
+- Published the completed source to `bbyykk/ai-taigi-keyboard`, verified remote `main`, retained the former working tree as a timestamped backup, and replaced the original local path with a fresh clone from the personal repository.

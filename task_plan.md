@@ -27,6 +27,9 @@ Study taigikeyboard/taigikeyboard and produce an implementation plan for a usabl
 ### Phase 7 — User documentation and activation instructions
 **Status:** complete
 
+### Phase 8 — Publish personal GitHub repository and replace checkout
+**Status:** complete
+
 ## Decisions
 - Treat the request as architecture and execution planning; do not modify the existing workspace application.
 
@@ -35,3 +38,4 @@ Study taigikeyboard/taigikeyboard and produce an implementation plan for a usabl
 - A full upstream composing test has one pre-existing dictionary corpus-frequency drift assertion; Linux-specific tests are green.
 - The first CMake install used `/usr/local` while the addon binary expected `/usr/share`; corrected the install path and addon library metadata, then reinstalled under `/usr`.
 - `rustfmt` is not on PATH as a standalone binary and a root-level cargo command was invoked from the wrong directory; neither affects the successful scoped build/test commands.
+- The initial combined GitHub repository-create command did not leave the remote branch visible; an explicit `git push -u origin main` completed publication.
