@@ -1,0 +1,68 @@
+// Main settings screen — Material3 NavigationBar + Scaffold hosting the Home / Theme / Layout /
+// Dictionary / Settings tabs; mounted by SettingsMainActivity.setContent.
+
+package com.siansiansu.taigikeyboard.ui.tabs
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import com.siansiansu.taigikeyboard.i18n.generated.StringKey
+import com.siansiansu.taigikeyboard.i18n.stringRes
+
+data class TabItem(
+    val iconResId: Int,
+    val label: StringKey,
+)
+
+@Composable
+fun MainSettingsScreen(
+    tabs: List<TabItem>,
+    initialTab: Int = 0,
+    content: @Composable (selectedTab: Int) -> Unit,
+) {
+    var selectedTab by rememberSaveable { mutableIntStateOf(initialTab) }
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                tabs.forEachIndexed { index, tab ->
+                    val label = stringRes(tab.label)
+                    NavigationBarItem(
+                        icon = {
+                            Icon(
+                                painter = painterResource(tab.iconResId),
+                                contentDescription = label,
+                            )
+                        },
+                        label = { Text(label) },
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        colors =
+                            NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.surfaceContainer,
+                            ),
+                    )
+                }
+            }
+        },
+    ) { innerPadding ->
+        Box(Modifier.padding(innerPadding)) {
+            content(selectedTab)
+        }
+    }
+}

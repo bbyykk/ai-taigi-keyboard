@@ -1,0 +1,55 @@
+package com.siansiansu.taigikeyboard.ui.theme
+
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+
+/**
+ * Centralized styling constants for the main app UI.
+ *
+ * Font sizes are defined in Typography (Theme.kt) and accessed via
+ * MaterialTheme.typography.*. This object holds spacing, dimensions,
+ * and colors not covered by Material 3.
+ *
+ * See .claude/rules/ui-style-guide.md for the cross-platform spec.
+ */
+object AppStyle {
+    // ── Icon Sizes ──────────────────────────────────────────────
+    val trailingChevronSize = 24.dp
+    val smallIconSize = 16.dp // detail icons, external link, info/help
+    val selectionIconSize = 20.dp // checkmark, reset/refresh
+
+    // ── Spacing ─────────────────────────────────────────────────
+    val sectionSpacing = 24.dp
+    val sectionHeaderBottomPadding = 6.dp
+    val scrollContentBottomPadding = 40.dp
+
+    // ── LargeTopAppBar ──────────────────────────────────────────
+    val largeTopAppBarExpandedHeight = 112.dp
+
+    // ── Colors (not in Material 3) ──────────────────────────────
+    // Aligned with iOS system colors (light / dark variants).
+
+    /** Accent orange for warning and feature icons. iOS equivalent: .orange */
+    @Composable
+    fun warningOrange(): Color = if (isSystemInDarkTheme()) Color(0xFFFF9F0A) else Color(0xFFFF9500)
+}
+
+/** Shared section header used across all tabs and settings screens. */
+@Composable
+fun SectionHeader(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        modifier = modifier.padding(start = 16.dp, bottom = AppStyle.sectionHeaderBottomPadding),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.titleMedium,
+    )
+}

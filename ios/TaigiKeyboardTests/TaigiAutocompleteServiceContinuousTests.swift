@@ -1,0 +1,586 @@
+@testable import TaigiKeyboard
+import KeyboardKit
+import XCTest
+
+/// v3.5.8 Phase 9 Item 4 — pins the Continuous-input suggestion-emission
+/// contract that `TaigiAutocompleteService.buildContinuousSuggestions` (producer)
+/// and `ActionHandler+Suggestions.handleSuggestionSelection` (consumer)
+/// share via `AutocompleteSuggestion.additionalInfo`.
+///
+/// Mirrors Android `ContinuousSuggestionsContractTest`. If iOS / Android
+/// disagree on these key strings, the platform tap path silently mis-aligns
+/// `commitContinuous` consumed-byte offsets and corrupts the engine pending
+/// buffer — invisible to the user until they hit a bad commit boundary.
+///
+/// Per `docs/engine/continuous-input-ranking.md` §10.1.2 (supersedes legacy
+/// slot-0 model) + §10.3 commit contract: Continuous mode has NO
+/// composing-text cell at slot 0. `candidate[0]` is the engine ranker top;
+/// Tap-0 commits `candidate[0].display_text` (clarification γ — canonical
+/// dictionary string, NOT the roman-with-spaces visual form).
+///
+/// Scope: producer-side unit tests against the internal
+/// `buildContinuousSuggestions(from:)` helper (accessed via `@testable`).
+/// Full `ActionHandler` tap-decode tests require mocking
+/// `KeyboardContext` / `composingManager` and are deferred.
+final class TaigiAutocompleteServiceContinuousTests: XCTestCase {
+
+    private var service: TaigiAutocompleteService!
+
+    override class func setUp() {
+        super.setUp()
+        RustEngineBridge.install()
+    }
+
+    override func setUp() {
+        super.setUp()
+        service = TaigiAutocompleteService()
+    }
+
+    override func tearDown() {
+        service = nil
+        super.tearDown()
+    }
+
+    private func makeCandidate(
+        consumedSpanStart: UInt32 = 0,
+        consumedSpanEnd: UInt32,
+        syllableCount: UInt32 = 1,
+        displayText: String,
+        score: Float = 1.0,
+        mode: RustEngineBridge.CandidateMode = .hant,
+        roman: String? = nil,
+        hanji: String? = nil,
+        canonicalTl: String? = nil,
+    ) -> RustEngineBridge.ContinuousCandidate {
+        RustEngineBridge.ContinuousCandidate(
+            consumedSpanStart: consumedSpanStart,
+            consumedSpanEnd: consumedSpanEnd,
+            syllableCount: syllableCount,
+            displayText: displayText,
+            score: score,
+            form: 1,
+            mode: mode,
+            roman: roman ?? displayText,
+            hanji: hanji,
+            canonicalTl: canonicalTl ?? roman ?? displayText,
+        )
+    }
+
+    func testSlotZeroIsCandidateTop_NoComposingCell() {
+        // v3.5.8 Phase 9 Item 4: §10.1.2 supersedes notice — the Continuous
+        // path no longer inserts a `createComposingTextSuggestion` at index 0.
+        // `candidate[0]` IS slot 0, carrying `isContinuous="true"` so the
+        // ActionHandler routes it through the Continuous commit branch.
+        let candidates = [
+            makeCandidate(consumedSpanEnd: 4, displayText: "tsua"),
+        ]
+        let result = service.buildContinuousSuggestions(from: candidates)
+
+        XCTAssertEqual(result.count, 1, "Continuous path emits exactly N cells (no slot-0 composing cell)")
+        let slot0 = result[0]
+        XCTAssertEqual(slot0.additionalInfo["isContinuous"], "true")
+        XCTAssertNil(
+            slot0.additionalInfo["isComposingText"],
+            "slot 0 must NOT carry isComposingText (legacy slot-0 model superseded)",
+        )
+    }
+
+    func testContinuousCandidatesCarryExactMetadataKeyStrings() {
+        let candidates = [
+            makeCandidate(consumedSpanEnd: 4, syllableCount: 1, displayText: "tsua"),
+            makeCandidate(consumedSpanEnd: 7, syllableCount: 2, displayText: "珠仔", score: 0.5),
+        ]
+        let result = service.buildContinuousSuggestions(from: candidates)
+
+        // First candidate (slot 0 — was slot 1 before Item 4)
+        XCTAssertEqual(result[0].additionalInfo["isContinuous"], "true")
+        XCTAssertEqual(result[0].additionalInfo["consumedBytes"], "4")
+        XCTAssertEqual(result[0].additionalInfo["syllableCount"], "1")
+        XCTAssertEqual(result[0].additionalInfo["displayText"], "tsua")
+
+        // Second candidate (slot 1 — was slot 2 before Item 4)
+        XCTAssertEqual(result[1].additionalInfo["isContinuous"], "true")
+        XCTAssertEqual(result[1].additionalInfo["consumedBytes"], "7")
+        XCTAssertEqual(result[1].additionalInfo["syllableCount"], "2")
+        XCTAssertEqual(result[1].additionalInfo["displayText"], "珠仔")
+    }
+
+    func testCanonicalTlSidechannelCarriesIdentityTl() {
+        // R2: the canonical TL identity rides `additionalInfo["canonicalTl"]`
+        // so the tap path can forward it as `commitContinuous(associationTl:)`.
+        // It is independent of the display `roman` — a POJ-rendered candidate
+        // shows `roman` = POJ but keeps `canonicalTl` = TL.
+        let candidates = [
+            makeCandidate(consumedSpanEnd: 6, displayText: "鵝", roman: "gô͘", canonicalTl: "gôo"),
+        ]
+        let result = service.buildContinuousSuggestions(from: candidates)
+        XCTAssertEqual(
+            result[0].additionalInfo["canonicalTl"],
+            "gôo",
+            "canonicalTl sidechannel must carry the canonical TL, not the POJ display roman",
+        )
+    }
+
+    func testConsumedBytesUsesConsumedSpanEnd() {
+        // Engine spans are byte-relative-to-pending-buffer; commit consumes
+        // bytes [start, end). The consumer needs `end` to know how many
+        // bytes to drop from pending. Mid-commit candidate.
+        let candidates = [
+            makeCandidate(consumedSpanStart: 3, consumedSpanEnd: 7, displayText: "uan"),
+        ]
+        let result = service.buildContinuousSuggestions(from: candidates)
+        XCTAssertEqual(result[0].additionalInfo["consumedBytes"], "7")
+    }
+
+    func testDisplayTextSidechannelIsEngineSuppliedRaw() {
+        // Codex P1 fix `f01559cf` — TPS layout would view-rewrite the
+        // `Suggestion.text` field, breaking commitContinuous alignment.
+        // Sidechannel `displayText` is the contract.
+        let candidates = [
+            makeCandidate(consumedSpanEnd: 6, syllableCount: 2, displayText: "tâi-uân"),
+        ]
+        let result = service.buildContinuousSuggestions(from: candidates)
+        XCTAssertEqual(
+            result[0].additionalInfo["displayText"],
+            "tâi-uân",
+            "displayText sidechannel must equal engine's raw displayText",
+        )
+    }
+
+    func testGammaClarification_DisplayTextSidechannelDecouplesFromText() {
+        // v3.5.8 Phase 9 §10.3 clarification γ at the producer boundary.
+        // After Item 6, the producer populates `Suggestion.text` from
+        // `candidate.roman` (TL romanization, visual form) and
+        // `additionalInfo["displayText"]` from `candidate.displayText`
+        // (= hanji ?? roman, canonical commit string). On a HANT
+        // candidate they DIVERGE — text shows the roman, sidechannel
+        // carries the hanji. The consumer
+        // (`ActionHandler+Suggestions.handleSuggestionSelection`) reads
+        // `additionalInfo["displayText"]` exclusively — no
+        // `?? suggestion.text` fallback — so γ holds regardless of
+        // which field mutates. This test pins the sidechannel emission
+        // as the authoritative commit-string carrier.
+        let candidates = [
+            makeCandidate(
+                consumedSpanEnd: 7,
+                syllableCount: 2,
+                displayText: "臺灣",
+                mode: .hant,
+                roman: "tâi-uân",
+                hanji: "臺灣",
+            ),
+        ]
+        let result = service.buildContinuousSuggestions(from: candidates)
+        XCTAssertEqual(
+            result[0].additionalInfo["displayText"],
+            "臺灣",
+            "displayText sidechannel is the canonical commit string (γ)",
+        )
+        XCTAssertEqual(
+            result[0].text,
+            "tâi-uân",
+            "Item 6: Suggestion.text carries roman (visual form), diverging from sidechannel (γ)",
+        )
+        XCTAssertNotEqual(
+            result[0].text,
+            result[0].additionalInfo["displayText"],
+            "Item 6 divergence — visual text MUST NOT collapse onto canonical commit string",
+        )
+    }
+
+    // MARK: - v3.5.8 Phase 9 Item 6 — dual-line carrier shape
+
+    /// HANT candidate (`hanji = Some("臺灣")`) renders dual-line:
+    /// `text/title = roman`, `subtitle = hanji`. Tap-0 commits via the
+    /// sidechannel `displayText` = `hanji`.
+    func testItem6_HANTCandidate_DualLine() {
+        let candidates = [
+            makeCandidate(
+                consumedSpanEnd: 7,
+                syllableCount: 2,
+                displayText: "臺灣",
+                mode: .hant,
+                roman: "tâi-uân",
+                hanji: "臺灣",
+            ),
+        ]
+        let result = service.buildContinuousSuggestions(from: candidates)
+        XCTAssertEqual(result[0].text, "tâi-uân", "HANT text = roman")
+        XCTAssertEqual(result[0].title, "tâi-uân", "HANT title = roman")
+        XCTAssertEqual(result[0].subtitle, "臺灣", "HANT subtitle = hanji")
+        XCTAssertEqual(result[0].additionalInfo["displayText"], "臺灣")
+    }
+
+    /// TAILO candidate (`hanji = None`) renders single-line: subtitle
+    /// stays nil; tap commits the engine's displayText sidechannel
+    /// (= roman for TAILO).
+    func testItem6_TAILOCandidate_SingleLine() {
+        let candidates = [
+            makeCandidate(
+                consumedSpanEnd: 4,
+                syllableCount: 1,
+                displayText: "tāi",
+                mode: .tailo,
+                roman: "tāi",
+                hanji: nil,
+            ),
+        ]
+        let result = service.buildContinuousSuggestions(from: candidates)
+        XCTAssertEqual(result[0].text, "tāi", "TAILO text = roman")
+        XCTAssertEqual(result[0].title, "tāi", "TAILO title = roman")
+        XCTAssertNil(result[0].subtitle, "TAILO subtitle = nil (no hanji)")
+        XCTAssertEqual(result[0].additionalInfo["displayText"], "tāi")
+    }
+
+    /// MIXED candidate (hanji contains Latin letters, per
+    /// `derive_mode` NFKD scan in `engine/lexicon/src/continuous.rs`).
+    /// Renders dual-line the same way HANT does.
+    func testItem6_MIXEDCandidate_DualLine() {
+        let candidates = [
+            makeCandidate(
+                consumedSpanEnd: 9,
+                syllableCount: 2,
+                displayText: "hip相",
+                mode: .mixed,
+                roman: "hip-siòng",
+                hanji: "hip相",
+            ),
+        ]
+        let result = service.buildContinuousSuggestions(from: candidates)
+        XCTAssertEqual(result[0].text, "hip-siòng", "MIXED text = roman")
+        XCTAssertEqual(result[0].title, "hip-siòng", "MIXED title = roman")
+        XCTAssertEqual(result[0].subtitle, "hip相", "MIXED subtitle = hanji")
+        XCTAssertEqual(result[0].additionalInfo["displayText"], "hip相")
+    }
+
+    /// Defensive: a wire defect where `hanji = Some("")` (engine
+    /// invariant says `None` for TAILO, but a faulty producer might
+    /// emit an empty string) collapses to a nil subtitle so the cell
+    /// renders single-line rather than showing a blank hanji line.
+    /// Mirrors the spec §4.4 `(c.hanji?.isEmpty == false)` guard.
+    func testItem6_HanjiPresentEmpty_CollapsesToNilSubtitle() {
+        let candidates = [
+            makeCandidate(
+                consumedSpanEnd: 4,
+                syllableCount: 1,
+                displayText: "tāi",
+                mode: .tailo,
+                roman: "tāi",
+                hanji: "",
+            ),
+        ]
+        let result = service.buildContinuousSuggestions(from: candidates)
+        XCTAssertNil(
+            result[0].subtitle,
+            "present-empty hanji must collapse to nil so the cell stays single-line",
+        )
+    }
+
+    // MARK: - v3.5.8 Phase 9 Item 6 — CandidateCellHelper render parity
+
+    /// `isTranslateSwapped = true` on a HANT continuous suggestion
+    /// swaps the visible title/subtitle through
+    /// `CandidateCellHelper.displayTitle / displaySubtitle`. Pins that
+    /// dual-line continuous candidates pick up the same swap rule as
+    /// lexicon-path candidates — neither path requires a Continuous-
+    /// specific code branch in the helper.
+    func testItem6_TranslateSwapped_HantCandidate_ShowsHanjiPrimary() {
+        let candidates = [
+            makeCandidate(
+                consumedSpanEnd: 7,
+                syllableCount: 2,
+                displayText: "臺灣",
+                mode: .hant,
+                roman: "tâi-uân",
+                hanji: "臺灣",
+            ),
+        ]
+        let suggestion = service.buildContinuousSuggestions(from: candidates)[0]
+        let title = CandidateCellHelper.displayTitle(
+            for: suggestion,
+            isTranslateSwapped: true,
+            isTPSLayout: false,
+            orMapsToER: false,
+            candidateDisplayMode: .sideBySide,
+        )
+        let subtitle = CandidateCellHelper.displaySubtitle(
+            for: suggestion,
+            isTranslateSwapped: true,
+            isTPSLayout: false,
+            candidateDisplayMode: .sideBySide,
+        )
+        XCTAssertEqual(title, "臺灣", "swap: title = hanji")
+        XCTAssertEqual(subtitle, "tâi-uân", "swap: subtitle = roman")
+    }
+
+    /// TPS-layout × HANT continuous: `displayTitle` returns hanji
+    /// (subtitle is non-empty) and `displaySubtitle` returns nil.
+    /// Pins behavior matches lexicon path under TPS keyboard.
+    func testItem6_TPSLayout_HantCandidate_ShowsHanjiOnly() {
+        let candidates = [
+            makeCandidate(
+                consumedSpanEnd: 7,
+                syllableCount: 2,
+                displayText: "臺灣",
+                mode: .hant,
+                roman: "tâi-uân",
+                hanji: "臺灣",
+            ),
+        ]
+        let suggestion = service.buildContinuousSuggestions(from: candidates)[0]
+        let title = CandidateCellHelper.displayTitle(
+            for: suggestion,
+            isTranslateSwapped: false,
+            isTPSLayout: true,
+            orMapsToER: false,
+            candidateDisplayMode: .sideBySide,
+        )
+        let subtitle = CandidateCellHelper.displaySubtitle(
+            for: suggestion,
+            isTranslateSwapped: false,
+            isTPSLayout: true,
+            candidateDisplayMode: .sideBySide,
+        )
+        XCTAssertEqual(title, "臺灣", "TPS: title = hanji (subtitle present)")
+        XCTAssertNil(subtitle, "TPS never shows a subtitle")
+    }
+
+    // MARK: - §42 漢羅濫 split cells
+
+    /// Under 濫 a hanji-bearing candidate becomes TWO adjacent single-script
+    /// cells — 漢字 then 羅馬字, neither with a subtitle — and the SEMANTIC
+    /// sidechannels (identity + engine offsets) are copied verbatim onto both.
+    func testCombined_HanjiBearingCandidate_SplitsIntoHanjiThenRomanCell() {
+        let candidates = [
+            makeCandidate(
+                consumedSpanEnd: 7,
+                syllableCount: 2,
+                displayText: "台語",
+                mode: .hant,
+                roman: "tâi-gí",
+                hanji: "台語",
+                canonicalTl: "tâi-gí",
+            ),
+        ]
+        let result = service.buildContinuousSuggestions(
+            from: candidates,
+            splitCombinedCells: true,
+        )
+        XCTAssertEqual(result.count, 2, "one candidate → hanji cell + roman cell")
+
+        let hanjiCell = result[0]
+        XCTAssertEqual(hanjiCell.text, "台語")
+        XCTAssertEqual(hanjiCell.title, "台語")
+        XCTAssertNil(hanjiCell.subtitle, "split cells carry no subtitle")
+        XCTAssertEqual(hanjiCell.additionalInfo[CandidateCellScript.infoKey], CandidateCellScript.hanji)
+        XCTAssertEqual(
+            hanjiCell.additionalInfo[CandidateCellScript.bracketRomanKey],
+            "tâi-gí",
+            "bracket-form carrier",
+        )
+
+        let romanCell = result[1]
+        XCTAssertEqual(romanCell.text, "tâi-gí")
+        XCTAssertEqual(romanCell.title, "tâi-gí")
+        XCTAssertNil(romanCell.subtitle, "split cells carry no subtitle")
+        XCTAssertEqual(romanCell.additionalInfo[CandidateCellScript.infoKey], CandidateCellScript.roman)
+
+        for cell in result {
+            XCTAssertEqual(cell.additionalInfo["isContinuous"], "true")
+            XCTAssertEqual(cell.additionalInfo["consumedBytes"], "7")
+            XCTAssertEqual(cell.additionalInfo["syllableCount"], "2")
+            XCTAssertEqual(cell.additionalInfo["displayText"], "台語", "identity never moves")
+            XCTAssertEqual(cell.additionalInfo["canonicalTl"], "tâi-gí", "identity never moves")
+        }
+    }
+
+    func testCombined_HanjiLessCandidate_EmitsSingleRomanCell() {
+        let candidates = [
+            makeCandidate(consumedSpanEnd: 4, displayText: "tāi", mode: .tailo, roman: "tāi", hanji: nil),
+        ]
+        let result = service.buildContinuousSuggestions(
+            from: candidates,
+            splitCombinedCells: true,
+        )
+        XCTAssertEqual(result.count, 1, "no hanji → roman cell alone")
+        XCTAssertEqual(result[0].text, "tāi")
+        XCTAssertNil(result[0].subtitle)
+        XCTAssertEqual(result[0].additionalInfo[CandidateCellScript.infoKey], CandidateCellScript.roman)
+    }
+
+    /// Each script dedupes on the text the cell shows, in FETCHED order —
+    /// first seen wins (do not assume the §34 literal is first). 食/𤆬 are
+    /// different Hanji, so both keep their hanji cell and share one `tsia̍h`
+    /// roman cell beside the first.
+    func testCombined_RomanCellDedupe_FirstSeenWins_DistinctHanjiCellsStay() {
+        let candidates = [
+            makeCandidate(consumedSpanEnd: 5, displayText: "食", mode: .hant, roman: "tsia̍h", hanji: "食"),
+            makeCandidate(consumedSpanEnd: 5, displayText: "𤆬", mode: .hant, roman: "tsia̍h", hanji: "𤆬"),
+        ]
+        let result = service.buildContinuousSuggestions(
+            from: candidates,
+            splitCombinedCells: true,
+        )
+        XCTAssertEqual(result.map(\.text), ["食", "tsia̍h", "𤆬"], "roman cell rides beside the FIRST candidate; 𤆬's duplicate roman is skipped")
+        XCTAssertEqual(result[1].additionalInfo["displayText"], "食", "surviving roman cell is the first-seen one")
+    }
+
+    /// The §34 literal (hanji-less and first in fetched order) absorbs a
+    /// same-roman dict row's roman cell.
+    func testCombined_LiteralAbsorbsSameRoman() {
+        let candidates = [
+            makeCandidate(consumedSpanEnd: 3, displayText: "tâi", mode: .tailo, roman: "tâi", hanji: nil),
+            makeCandidate(consumedSpanEnd: 3, displayText: "台", mode: .hant, roman: "tâi", hanji: "台"),
+        ]
+        let result = service.buildContinuousSuggestions(
+            from: candidates,
+            splitCombinedCells: true,
+        )
+        XCTAssertEqual(result.map(\.text), ["tâi", "台"], "literal's roman cell absorbs 台's; 台 keeps its hanji cell")
+        XCTAssertEqual(result[0].additionalInfo["displayText"], "tâi", "surviving roman cell is the literal's")
+    }
+
+    /// A cell reading exactly like an earlier one is never listed, whatever
+    /// slice of the buffer it would commit — the user cannot tell the two
+    /// apart on screen (USER 2026-09-03).
+    func testCombined_SameTextDifferentSpan_IsOneCell() {
+        let candidates = [
+            makeCandidate(consumedSpanEnd: 3, displayText: "tâi", mode: .tailo, roman: "tâi", hanji: nil),
+            makeCandidate(consumedSpanEnd: 7, displayText: "tâi", mode: .tailo, roman: "tâi", hanji: nil),
+        ]
+        let result = service.buildContinuousSuggestions(
+            from: candidates,
+            splitCombinedCells: true,
+        )
+        XCTAssertEqual(result.count, 1, "same rendered roman → one cell, span is not part of the key")
+
+        let hanji = [
+            makeCandidate(consumedSpanEnd: 5, displayText: "食", mode: .hant, roman: "tsia̍h", hanji: "食"),
+            makeCandidate(consumedSpanEnd: 6, displayText: "食", mode: .hant, roman: "tsia̍h8", hanji: "食"),
+        ]
+        let hanjiResult = service.buildContinuousSuggestions(from: hanji, splitCombinedCells: true)
+        XCTAssertEqual(hanjiResult.map(\.text), ["食", "tsia̍h", "tsia̍h8"], "one 食 cell; the second roman still differs")
+    }
+
+    /// 重/tîng and 重/tāng are two words (Core Principle #7) but draw the SAME
+    /// 漢字 cell, so 濫 lists 重 once and keeps both roman cells — the losing
+    /// reading stays reachable through its own romanization.
+    func testCombined_SameHanjiTwoReadings_IsOneHanjiCellTwoRomanCells() {
+        let candidates = [
+            makeCandidate(consumedSpanEnd: 5, displayText: "重", mode: .hant, roman: "tîng", hanji: "重", canonicalTl: "tîng"),
+            makeCandidate(consumedSpanEnd: 5, displayText: "重", mode: .hant, roman: "tāng", hanji: "重", canonicalTl: "tāng"),
+        ]
+        let result = service.buildContinuousSuggestions(
+            from: candidates,
+            splitCombinedCells: true,
+        )
+        XCTAssertEqual(result.map(\.text), ["重", "tîng", "tāng"])
+        XCTAssertEqual(result[0].additionalInfo["canonicalTl"], "tîng", "surviving 漢字 cell is the first-seen reading")
+        XCTAssertEqual(result[2].additionalInfo["canonicalTl"], "tāng", "the losing reading keeps its own roman cell")
+        XCTAssertEqual(result[2].additionalInfo[CandidateCellScript.infoKey], CandidateCellScript.roman)
+    }
+
+    /// Split OFF (並排 / 羅馬字 / TPS all resolve to `splitCombinedCells =
+    /// false` at the provider) emits today's un-split shape byte-identically —
+    /// the default parameter and explicit `false` agree field-for-field, with
+    /// no `cellScript` marker. Mirrors Android's "S27 combined split OFF" pin.
+    func testSplitOff_EmitsUnsplitShapeByteIdentically() {
+        let candidates = [
+            makeCandidate(
+                consumedSpanEnd: 7,
+                syllableCount: 2,
+                displayText: "臺灣",
+                mode: .hant,
+                roman: "tâi-uân",
+                hanji: "臺灣",
+            ),
+        ]
+        let baseline = service.buildContinuousSuggestions(from: candidates)
+        let result = service.buildContinuousSuggestions(from: candidates, splitCombinedCells: false)
+        XCTAssertEqual(result.count, baseline.count)
+        XCTAssertEqual(result[0].text, baseline[0].text)
+        XCTAssertEqual(result[0].title, baseline[0].title)
+        XCTAssertEqual(result[0].subtitle, baseline[0].subtitle)
+        XCTAssertEqual(result[0].additionalInfo, baseline[0].additionalInfo)
+        XCTAssertNil(result[0].additionalInfo[CandidateCellScript.infoKey], "no marker on the un-split path")
+    }
+
+    // MARK: - Split gate (which mode / layout splits at all)
+
+    /// §42 濫 split gate: 漢羅濫 + non-TPS splits, everything else does not.
+    /// Pins the polarity of the TPS clause (an inverted condition would split
+    /// under TPS and stop splitting under 漢羅濫). Mirrors Android
+    /// `split gate is combined mode outside TPS only`.
+    func testSplitGate_isCombinedModeOutsideTPSOnly() {
+        XCTAssertTrue(shouldSplitCombinedCells(keyboardLayoutType: .phahTaigi, candidateDisplayMode: .combined))
+        XCTAssertFalse(
+            shouldSplitCombinedCells(keyboardLayoutType: .tps, candidateDisplayMode: .combined),
+            "TPS ignores the picker — hanji-first by construction",
+        )
+        for mode in [CandidateDisplayMode.sideBySide, .romanOnly] {
+            XCTAssertFalse(
+                shouldSplitCombinedCells(keyboardLayoutType: .phahTaigi, candidateDisplayMode: mode),
+                "\(mode) never splits",
+            )
+            XCTAssertFalse(
+                shouldSplitCombinedCells(keyboardLayoutType: .tps, candidateDisplayMode: mode),
+                "\(mode) never splits under TPS",
+            )
+        }
+    }
+
+    // MARK: - Misc
+
+    func testEmptyCandidateList_EmitsEmptyList() {
+        // v3.5.8 Phase 9 Item 4 / Item 13: §10.7 edge case "Empty buffer" /
+        // partial prefix — the strip is empty when the engine returns no
+        // candidates. After Item 13 the engine is the single candidate
+        // source (no lexicon fallback, no synthetic slot-0 cell). Helper
+        // contract: zero candidates → zero suggestions.
+        let result = service.buildContinuousSuggestions(from: [])
+        XCTAssertTrue(result.isEmpty, "Empty candidates → empty suggestions")
+    }
+
+    // MARK: - v3.5.8 Phase 9 Item 13 — fallback retire (§15.6)
+
+    /// Minimal stub that supplies both the composing state and the
+    /// Continuous fetch surface, so `autocomplete(_:)` can be exercised
+    /// end-to-end without a real `ComposingManager`.
+    private final class StubComposing: ComposingStateProvider, ContinuousCandidateFetcher {
+        var isComposing = true
+        var rawInput = "gua"
+        var composingText = "gua"
+        var fetchResult: [RustEngineBridge.ContinuousCandidate] = []
+        func fetchContinuousCandidates() -> [RustEngineBridge.ContinuousCandidate] { fetchResult }
+    }
+
+    /// `platform_autocomplete_no_lexicon_branch` (§15.6): after the
+    /// fallback retire, an engine that returns no candidates yields an
+    /// empty strip — there is NO platform lexicon path and NO slot-0
+    /// composing-text cell. Pins that `autocomplete(_:)` is engine-only.
+    func testAutocomplete_EmptyEngine_NoLexiconBranch_EmptyResult() async throws {
+        let stub = StubComposing()
+        stub.fetchResult = []
+        service.setComposingManager(stub)
+        let result = try await service.autocomplete("gua")
+        XCTAssertTrue(
+            result.suggestions.isEmpty,
+            "empty engine → empty strip (no lexicon fallback, no slot-0 cell)",
+        )
+    }
+
+    /// Positive control: a non-empty engine result flows straight through
+    /// `buildContinuousSuggestions` with no slot-0 cell injected.
+    func testAutocomplete_EngineCandidates_SingleSourcePassthrough() async throws {
+        let stub = StubComposing()
+        stub.fetchResult = [makeCandidate(consumedSpanEnd: 3, displayText: "guá")]
+        service.setComposingManager(stub)
+        let result = try await service.autocomplete("gua")
+        XCTAssertEqual(result.suggestions.count, 1, "engine candidates pass through 1:1")
+        XCTAssertEqual(result.suggestions[0].additionalInfo["isContinuous"], "true")
+        XCTAssertNil(
+            result.suggestions[0].additionalInfo["isComposingText"],
+            "no slot-0 composing-text cell on the single-source path",
+        )
+    }
+}

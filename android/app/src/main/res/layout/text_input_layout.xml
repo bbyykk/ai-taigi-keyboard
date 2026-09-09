@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/text_input"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:ignore="MergeRootFrame">
+
+    <!-- 主要鍵盤視圖：Smartbar + 鍵盤 (Compose body) -->
+    <LinearLayout
+        android:id="@+id/text_input_content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <include layout="@layout/smartbar" />
+
+        <!-- Compose-rendered keyboard body. `TextInputManager.onRegisterInputView`
+             replaces this placeholder with the actual ComposeView at runtime,
+             keeping the placement contract while letting LayoutInflater report
+             the correct child index back to addView(). -->
+        <FrameLayout
+            android:id="@+id/keyboard_compose_host"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+    <!-- 候選詞展開 Overlay：從 Smartbar 下方開始，向下覆蓋鍵盤 -->
+    <com.siansiansu.taigikeyboard.ime.text.smartbar.CandidateOverlayView
+        android:id="@+id/candidate_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="top"
+        android:visibility="gone" />
+
+    <!-- Layout selection overlay: covers keyboard with layout preview cards -->
+    <com.siansiansu.taigikeyboard.ime.text.smartbar.LayoutSelectionOverlayView
+        android:id="@+id/layout_selection_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="top"
+        android:visibility="gone" />
+
+    <!-- Symbol selection overlay: covers keyboard with symbol grid -->
+    <com.siansiansu.taigikeyboard.ime.text.smartbar.SymbolSelectionOverlayView
+        android:id="@+id/symbol_selection_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="top"
+        android:visibility="gone" />
+
+    <!-- Settings selection overlay: covers keyboard with settings toggles -->
+    <com.siansiansu.taigikeyboard.ime.text.smartbar.SettingsSelectionOverlayView
+        android:id="@+id/settings_selection_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="top"
+        android:elevation="8dp"
+        android:visibility="gone" />
+
+</FrameLayout>

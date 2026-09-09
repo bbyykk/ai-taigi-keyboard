@@ -1,0 +1,35 @@
+# Changelog
+
+Two release trains, two version numbers (`docs/architecture/manual-release-notes.md` § Two release trains).
+
+## Desktop — macOS + Windows
+
+- [v3.6.7](changelog/desktop-v3.6.7.md)
+
+## Mobile — iOS + Android
+
+- [v3.6.5](changelog/v3.6.5.md)
+- [v3.6.4](changelog/v3.6.4.md)
+- [v3.6.3](changelog/v3.6.3.md)
+- [v3.6.2](changelog/v3.6.2.md)
+- [v3.6.1](changelog/v3.6.1.md)
+- [v3.6.0](changelog/v3.6.0.md)
+- [v3.5.9](changelog/v3.5.9.md)
+- [v3.5.8](changelog/v3.5.8.md)
+- [v3.5.7](changelog/v3.5.7.md)
+- [v3.5.6](changelog/v3.5.6.md)
+- [v3.5.5](changelog/v3.5.5.md)
+- [v3.5.3](changelog/v3.5.3.md)
+- [v3.5.2](changelog/v3.5.2.md)
+- [v3.5.1](changelog/v3.5.1.md)
+- [v3.5.0](changelog/v3.5.0.md)
+- [v3.4.9](changelog/v3.4.9.md)
+- [v3.4.8](changelog/v3.4.8.md)
+- [v3.4.7](changelog/v3.4.7.md)
+- [v3.4.6](changelog/v3.4.6.md)
+- [v3.4.5](changelog/v3.4.5.md)
+- [v3.4.4](changelog/v3.4.4.md)
+- [v3.4.2](changelog/v3.4.2.md)
+- [v3.4.1](changelog/v3.4.1.md)
+- [v3.3.10](changelog/v3.3.10.md)
+- [v3.3.9](changelog/v3.3.9.md)

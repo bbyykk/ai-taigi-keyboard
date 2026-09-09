@@ -1,0 +1,190 @@
+#!/usr/bin/python3
+"""IBus frontend for the shared Taigi Keyboard Rust engine."""
+
+import ctypes
+import os
+import sys
+
+import gi
+gi.require_version("IBus", "1.0")
+from gi.repository import GLib, IBus
+
+
+if "--xml" in sys.argv:
+    print("""<engines>
+  <engine>
+    <name>taigi</name>
+    <longname>Taigi Keyboard</longname>
+    <description>Taiwanese input method</description>
+    <language>nan</language>
+    <license>Apache-2.0</license>
+    <author>Taigi Keyboard contributors</author>
+    <icon>input-keyboard</icon>
+    <layout>us</layout>
+  </engine>
+</engines>""")
+    sys.exit(0)
+
+
+LIBRARY = "/usr/lib/x86_64-linux-gnu/taigi-keyboard/liblinux_ffi.so"
+DICTIONARIES = "/usr/share/taigi-keyboard/dictionaries"
+
+
+class RustEngine:
+    def __init__(self):
+        self.lib = ctypes.CDLL(LIBRARY)
+        self.lib.taigi_linux_init.argtypes = [ctypes.c_char_p]
+        self.lib.taigi_linux_init.restype = ctypes.c_int
+        self.lib.taigi_linux_command.argtypes = [ctypes.c_char_p]
+        self.lib.taigi_linux_command.restype = ctypes.c_void_p
+        self.lib.taigi_linux_free.argtypes = [ctypes.c_void_p]
+        if not self.lib.taigi_linux_init(DICTIONARIES.encode()):
+            raise RuntimeError("Taigi dictionary initialization failed")
+
+    def command(self, value):
+        pointer = self.lib.taigi_linux_command(value.encode())
+        if not pointer:
+            return "error=engine\n"
+        try:
+            return ctypes.string_at(pointer).decode("utf-8")
+        finally:
+            self.lib.taigi_linux_free(pointer)
+
+
+def unescape(value):
+    result = []
+    escaped = False
+    for char in value:
+        if escaped:
+            result.append({"n": "\n", "t": "\t"}.get(char, char))
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        else:
+            result.append(char)
+    return "".join(result)
+
+
+class TaigiEngine(IBus.Engine):
+    def __init__(self, bus, object_path):
+        super().__init__(connection=bus.get_connection(), object_path=object_path)
+        self.rust = RustEngine()
+        self.candidates = []
+        self.composing = False
+
+    def apply(self, command):
+        response = self.rust.command(command)
+        preedit = ""
+        candidates = []
+        composing = False
+        commit = []
+        for line in response.splitlines():
+            if line.startswith("preedit="):
+                preedit = unescape(line[8:])
+            elif line.startswith("composing="):
+                composing = line[10:] == "true"
+            elif line == "candidates_begin=1":
+                candidates = []
+            elif line.startswith("candidate=") and "\t" in line:
+                candidates.append(unescape(line.split("\t", 1)[1]))
+            elif line.startswith("commit="):
+                commit.append(unescape(line[7:]))
+
+        for text in commit:
+            self.commit_text(IBus.Text.new_from_string(text))
+        self.candidates = candidates
+        self.composing = composing
+        self.update_preedit_text(
+            IBus.Text.new_from_string(preedit), len(preedit), composing
+        )
+        table = IBus.LookupTable.new(9, 0, False, False)
+        for candidate in candidates[:9]:
+            table.append_candidate(IBus.Text.new_from_string(candidate))
+        self.update_lookup_table(table, bool(candidates))
+
+    def do_process_key_event(self, keyval, keycode, state):
+        if state & (IBus.ModifierType.CONTROL_MASK | IBus.ModifierType.MOD1_MASK | IBus.ModifierType.SUPER_MASK):
+            if state & IBus.ModifierType.CONTROL_MASK and state & IBus.ModifierType.SHIFT_MASK:
+                if keyval in (IBus.KEY_1, IBus.KEY_2, IBus.KEY_3):
+                    self.apply("mode=" + chr(keyval))
+                    return True
+            return False
+        if keyval == IBus.KEY_Escape:
+            self.apply("reset")
+            return True
+        if keyval == IBus.KEY_BackSpace:
+            self.apply("backspace")
+            return True
+        if keyval in (IBus.KEY_Return, IBus.KEY_KP_Enter):
+            if self.composing:
+                self.apply("commit")
+                return True
+            return False
+        if keyval == IBus.KEY_space and self.composing:
+            self.apply("select=0")
+            return True
+        if self.composing and IBus.KEY_1 <= keyval <= IBus.KEY_9:
+            index = keyval - IBus.KEY_1
+            if index < len(self.candidates):
+                self.apply("select=" + str(index))
+                return True
+        if 0x20 <= keyval <= 0x7e:
+            self.apply("append=" + chr(keyval))
+            return True
+        return False
+
+    def do_candidate_clicked(self, index, button, state):
+        if 0 <= index < len(self.candidates):
+            self.apply("select=" + str(index))
+
+    def do_reset(self):
+        self.apply("reset")
+
+    def do_focus_out(self):
+        self.apply("reset")
+
+
+class Factory(IBus.Factory):
+    def __init__(self, bus):
+        super().__init__(connection=bus.get_connection(), object_path=IBus.PATH_FACTORY)
+        self.bus = bus
+        self.counter = 0
+
+    def do_create_engine(self, engine_name):
+        self.counter += 1
+        path = "/com/taigikeyboard/IBus/Engine/{}".format(self.counter)
+        return TaigiEngine(self.bus, path)
+
+
+def main():
+    IBus.init()
+    bus = IBus.Bus()
+    factory = Factory(bus)
+    component = IBus.Component(
+        name="org.taigikeyboard.IBus",
+        description="Taigi Keyboard IBus Engine",
+        version="0.1.0",
+        license="Apache-2.0",
+        author="Taigi Keyboard contributors",
+        homepage="https://github.com/taigikeyboard/taigikeyboard",
+    )
+    component.add_engine(IBus.EngineDesc(
+        name="taigi",
+        longname="Taigi Keyboard",
+        description="Taiwanese input method",
+        language="nan",
+        license="Apache-2.0",
+        author="Taigi Keyboard contributors",
+        icon="input-keyboard",
+        layout="us",
+    ))
+    bus.register_component(component)
+    GLib.MainLoop().run()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as error:
+        print("ibus-taigi: {}".format(error), file=sys.stderr)
+        raise

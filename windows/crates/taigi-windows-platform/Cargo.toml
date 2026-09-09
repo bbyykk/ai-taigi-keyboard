@@ -1,0 +1,58 @@
+[package]
+name = "taigi-windows-platform"
+description = "The few Win32 calls the DLL and the settings window both need, with host stubs so the callers stay testable on macOS"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+# The domain types the shared key translation answers in: a snapshot for the
+# DLL's classifier, a recorded press for the settings window's recorder.
+# `taigi-windows-core` depends on nothing here, so the edge is one way.
+taigi-windows-core.workspace = true
+# The shape `rfd` asks a dialog's owner window for; the HWND behind it is
+# this crate's to read.
+raw-window-handle.workspace = true
+log.workspace = true
+thiserror.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_Globalization",
+    # The font-file inspection both binaries share (`font_file`).
+    "Win32_Graphics_DirectWrite",
+    "Win32_Graphics_Dwm",
+    "Win32_Graphics_Gdi",
+    # `CreateMutexW`'s security-attributes parameter (the single-instance
+    # guard); the crate gates it behind this feature.
+    "Win32_Security",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Registry",
+    "Win32_System_SystemInformation",
+    "Win32_System_SystemServices",
+    "Win32_System_Threading",
+    "Win32_UI_Accessibility",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
+# The raw bindings behind `os_out_buffer` — see that module for why the
+# ergonomic `&mut [T]` wrappers cannot be used for a buffer we read back.
+windows-sys = { workspace = true, features = [
+    "Win32_Globalization",
+    "Win32_System_LibraryLoader",
+    "Win32_UI_Input_KeyboardAndMouse",
+] }
+
+[lints.rust]
+# JUSTIFICATION: the calls here are the raw Win32 API; each `unsafe`
+# block is one call with a `// SAFETY:` line. Every other crate keeps the
+# workspace's `forbid`.
+unsafe_code = "allow"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

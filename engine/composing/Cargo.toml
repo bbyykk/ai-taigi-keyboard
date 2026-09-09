@@ -1,0 +1,32 @@
+[package]
+name = "composing"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+protos = { workspace = true }
+phonetics = { workspace = true }
+lexicon = { workspace = true }
+# v3.5.8 Phase 9.3a — `dispatch::handle_fetch_at_pos` builds a
+# `ranking::FrequencyMap` from the proto-wire `FrequencyEntry[]`
+# attached to `FetchAtPos`. Lexicon stays proto-agnostic; composing
+# (which already decodes proto requests) owns the proto-→ranking
+# conversion.
+ranking = { workspace = true }
+log = { workspace = true }
+thiserror = { workspace = true }
+once_cell = { workspace = true }
+# v3.5.8 Phase 9 Item 9 — `canonicalize_poj_shadow` decomposes POJ-display
+# input (combining tone marks + `o\u{0358}` + `\u{207f}`) via NFD so the
+# FST shadow buffer becomes ASCII-canonical TL spelling.
+unicode-normalization = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+fst = { workspace = true }

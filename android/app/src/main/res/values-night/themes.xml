@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        KeyboardTheme Dark Mode - 鍵盤專用深色主題
+        保留此主題以支援鍵盤的深色模式
+    -->
+    <style name="KeyboardTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:enforceNavigationBarContrast" tools:targetApi="q">false</item>
+        <item name="android:colorControlNormal">#B3FFFFFF</item><!-- White, semi transparent -->
+        <item name="android:textColor">#FFFFFF</item><!-- White -->
+        <item name="semiTransparentColor">#20FFFFFF</item><!-- White, semi transparent -->
+
+        <item name="key_bgColor">#6B6B6B</item><!-- iOS keyboardButtonBackground dark -->
+        <item name="key_bgColorPressed">#808080</item><!-- +21 lighter for press feedback -->
+        <item name="key_bgColorActive">#9E9E9E</item><!-- Translate button active/swapped state -->
+        <item name="key_function_bgColor">#6B6B6B</item><!-- Same as normal key bg -->
+        <item name="key_function_bgColorPressed">#808080</item><!-- Same as normal key pressed -->
+        <item name="key_fgColor">?android:textColor</item>
+        <item name="key_enter_bgColor">#6B6B6B</item><!-- Same as normal key -->
+        <item name="key_enter_bgColorPressed">#808080</item><!-- Same as normal key pressed -->
+        <item name="key_enter_fgColor">#FFFFFF</item><!-- White text -->
+
+        <item name="key_popup_bgColor">#757575</item><!-- Gray 600 -->
+        <item name="key_popup_fgColor">?android:textColor</item>
+
+        <item name="key_popup_extended_bgColor">@android:color/transparent</item>
+        <item name="key_popup_extended_bgColorActive">#BDBDBD</item><!-- Gray 400 -->
+        <item name="key_popup_extended_shadowColor">#CD353535</item>
+
+        <item name="keyboard_bgColor">#2C2C2C</item><!-- iOS keyboardBackground dark -->
+
+
+        <item name="smartbar_bgColor">?keyboard_bgColor</item>
+        <item name="smartbar_fgColor">?android:textColor</item>
+        <item name="smartbar_button_fgColor">?key_fgColor</item>
+        <item name="smartbar_candidate_fgColor">?android:textColor</item>
+        <item name="smartbar_accentColor">#0A84FF</item><!-- iOS blue (dark), for toolbar selection -->
+        <item name="smartbar_candidate_subtitle_fgColor">#FFFFFF</item><!-- White, for subtitle text in dark mode -->
+
+        <item name="overlay_button_bgColorPressed">#40FFFFFF</item><!-- White, 25% opacity -->
+    </style>
+
+    <!--
+        SettingsTheme 使用 Material3.DayNight，自動處理深淺模式
+        不需要在此處定義 night variant
+    -->
+
+</resources>

@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/kianing/ai-workspace/ai-taigi-keyboard/build/linux/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

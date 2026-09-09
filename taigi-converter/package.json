@@ -1,0 +1,54 @@
+{
+  "name": "@taigikeyboard/taigi-cli",
+  "version": "0.2.0",
+  "description": "Bidirectional converter between Taiwanese phonetic systems: TL (Tai-lo), POJ (Pe-oh-e-ji), TPS (方音符號), and Taiwanese braille, with tone mark / tone number conversion",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "bin": {
+    "tai": "bin/tai.js"
+  },
+  "files": [
+    "src/",
+    "bin/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "taigi",
+    "taiwanese",
+    "tl",
+    "tâi-lô",
+    "poj",
+    "pe̍h-ōe-jī",
+    "tps",
+    "phonetic",
+    "braille",
+    "converter",
+    "cli"
+  ],
+  "author": "siansiansu",
+  "license": "MIT",
+  "homepage": "https://github.com/taigikeyboard/taigi-converter#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/taigikeyboard/taigi-converter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/taigikeyboard/taigi-converter/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "node --test tests/*.js",
+    "build:dict": "node scripts/build-dictionary.js"
+  },
+  "dependencies": {
+    "@kemdict/kesi": "^0.3.1"
+  }
+}

@@ -1,0 +1,1906 @@
+{
+  "namespace": "dictionary",
+  "keys": {
+    "clear": {
+      "comment": "Generic clear button label (e.g. confirm clearing all frequency/association records).",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "清除",
+        "tailo": "tshing-tî",
+        "poj": "chheng-tî",
+        "en": "Clear",
+        "ja": "クリア"
+      }
+    },
+    "save": {
+      "comment": "Save button in the custom-dictionary add/edit entry dialog.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "儉起來",
+        "tailo": "khiām--khí-lâi",
+        "poj": "khiām--khí-lâi",
+        "en": "Save",
+        "ja": "保存"
+      }
+    },
+    "customDictionary": {
+      "comment": "Custom dictionary section/page title.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "自訂詞庫",
+        "tailo": "tsū-tīng-sû-khòo",
+        "poj": "chū-tēng-sû-khò͘",
+        "en": "Custom Dictionary",
+        "ja": "カスタム辞書"
+      }
+    },
+    "customDictEnabled": {
+      "comment": "Toggle label: enable the user's custom dictionary in candidate suggestions.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "啟用自訂詞庫",
+        "tailo": "khé-iōng tsū-tīng-sû-khòo",
+        "poj": "khé-iōng chū-tēng-sû-khò͘",
+        "en": "Enable Custom Dictionary",
+        "ja": "カスタム辞書を有効にする"
+      }
+    },
+    "customDictEnabledInfo": {
+      "comment": "Info-dialog body explaining what enabling the custom dictionary does.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "拍開了後，自訂詞會出現佇候選詞內底；關起來了後，就袂閣出現。",
+        "tailo": "phah-khui liáu-āu, tsū-tīng-sû ē tshut-hiān tī hāu-suán sû lāi-té; kuainn--khí-lâi liáu-āu, tsiū buē koh tshut-hiān.",
+        "poj": "phah-khui liáu-āu, chū-tēng-sû ē chhut-hiān tī hāu-soán sû lāi-té; koaiⁿ--khí-lâi liáu-āu, chiū bōe koh chhut-hiān.",
+        "en": "When on, words you add appear among the candidates. When off, your custom words no longer show up.",
+        "ja": "オンにすると、追加した単語が候補に表示されます。オフにすると、カスタム単語は表示されなくなります。"
+      }
+    },
+    "dataManagement": {
+      "comment": "Section title for keyboard-data management (custom words, frequency/association records, backup/import/export).",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "使用資料",
+        "tailo": "sú-iōng tsu-liāu",
+        "poj": "sú-iōng chu-liāu",
+        "en": "Keyboard Data",
+        "ja": "キーボードデータ"
+      }
+    },
+    "variantDictionary": {
+      "comment": "Toggle/section label for the variant-character (異用字) dictionary source.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "異用字",
+        "tailo": "ī iōng-jī",
+        "poj": "ī iōng-jī",
+        "en": "Variant Characters",
+        "ja": "異体字"
+      }
+    },
+    "khiin": {
+      "comment": "Toggle/section label for the Khiin (在來字) dictionary source.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "在來字",
+        "tailo": "tsāi-lâi jī",
+        "poj": "chāi-lâi jī",
+        "en": "Conventional Characters",
+        "ja": "在来字"
+      }
+    },
+    "customDictDescription": {
+      "comment": "Description of the custom-dictionary CSV format (column layout).",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "自訂詞庫使用 CSV 純文字檔案，第 1 欄囥欲拍 ê 羅馬字，第 2 欄囥漢字，毋免囥標題。",
+        "tailo": "tsū-tīng-sû-khòo sú-iōng CSV sûn bûn-jī tòng-àn, tē 1 lân khǹg beh phah ê lô-má-jī, tē 2 lân khǹg hàn-jī, m̄-bián khǹg piau-tê.",
+        "poj": "chū-tēng-sû-khò͘ sú-iōng CSV sûn bûn-jī tòng-àn, tē 1 lân khǹg beh phah ê lô-má-jī, tē 2 lân khǹg hàn-jī, m̄-bián khǹg piau-tê.",
+        "en": "The custom dictionary uses a plain-text CSV file: column 1 holds the romanization to type, column 2 holds the Hanji. No header row.",
+        "ja": "カスタム辞書はプレーンテキストの CSV ファイルを使用します。1 列目に入力するローマ字、2 列目に漢字を記入します。ヘッダー行は不要です。"
+      }
+    },
+    "customDictEmpty": {
+      "comment": "Empty-state hint shown when the custom dictionary has no entries. On macOS it is the symbol's accessibility label rather than visible copy; the wording holds there because the pane has a + button too.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "揤 + 符號加入自訂詞",
+        "tailo": "tshi̍h + hû-hō ka-ji̍p tsū-tīng-sû",
+        "poj": "chhi̍h + hû-hō ka-ji̍p chū-tēng-sû",
+        "en": "Tap + to add a custom word",
+        "ja": "＋ をタップしてカスタム単語を追加"
+      }
+    },
+    "addEntry": {
+      "comment": "Title of the add-custom-entry dialog.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "增加詞",
+        "tailo": "tsing-ka sû",
+        "poj": "cheng-ka sû",
+        "en": "Add Word",
+        "ja": "単語を追加"
+      }
+    },
+    "editEntry": {
+      "comment": "Title of the edit-custom-entry dialog.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "編輯詞",
+        "tailo": "pian-tsi̍p sû",
+        "poj": "pian-chi̍p sû",
+        "en": "Edit Word",
+        "ja": "単語を編集"
+      }
+    },
+    "romanLabel": {
+      "comment": "Custom-entry column header and field label: the romanization the user types (拍).",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "拍",
+        "tailo": "phah",
+        "poj": "phah",
+        "en": "Romanization",
+        "ja": "ローマ字"
+      }
+    },
+    "romanPlaceholder": {
+      "comment": "Placeholder example for the romanization field in the custom-entry dialog.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "見本：gâu-tsá",
+        "tailo": "kiàn-pún: gâu-tsá",
+        "poj": "kiàn-pún: gâu-chá",
+        "en": "Example: 𠢕早",
+        "ja": "例：gâu-tsá"
+      }
+    },
+    "hanziLabel": {
+      "comment": "Custom-entry column header and field label: what typing the romanization finds (揣).",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "揣",
+        "tailo": "tshuē",
+        "poj": "chhōe",
+        "en": "Hanji",
+        "ja": "漢字"
+      }
+    },
+    "hanziPlaceholder": {
+      "comment": "Placeholder example for the Hanji field in the custom-entry dialog.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "見本：𠢕早",
+        "tailo": "kiàn-pún: gâu-tsá",
+        "poj": "kiàn-pún: gâu-chá",
+        "en": "Example: gâu-tsá",
+        "ja": "例：𠢕早"
+      }
+    },
+    "deleteAll": {
+      "comment": "Destructive action: delete all custom-dictionary entries.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "刪除全部自訂詞",
+        "tailo": "san-tû tsuân-pōo tsū-tīng-sû",
+        "poj": "san-tû choân-pō͘ chū-tēng-sû",
+        "en": "Delete All Custom Words",
+        "ja": "すべてのカスタム単語を削除"
+      }
+    },
+    "deleteAllMessage": {
+      "comment": "Confirmation dialog body for deleting all custom-dictionary entries.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "敢確定欲刪除所有自訂詞？",
+        "tailo": "kám khak-tīng beh san-tû sóo-iú tsū-tīng-sû?",
+        "poj": "kám khak-tēng beh san-tû só͘-iú chū-tēng-sû?",
+        "en": "Delete all custom words?",
+        "ja": "すべてのカスタム単語を削除しますか？"
+      }
+    },
+    "customDictPrivacyWarning": {
+      "comment": "Privacy warning against storing sensitive personal data in the custom dictionary.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "自訂詞庫毋通囥身分證字號、密碼、信用卡號碼抑是其他敏感資料。",
+        "tailo": "tsū-tīng-sû-khòo m̄-thang khǹg sin-hūn-tsìng jī-hō, bi̍t-bé, sìn-iōng-khah hō-bé ah-sī kî-thann bín-kám tsu-liāu.",
+        "poj": "chū-tēng-sû-khò͘ m̄-thang khǹg sin-hūn-chèng jī-hō, bi̍t-bé, sìn-iōng-khah hō-bé ah-sī kî-thaⁿ bín-kám chu-liāu.",
+        "en": "Do not store ID numbers, passwords, credit-card numbers, or other sensitive data in the custom dictionary.",
+        "ja": "カスタム辞書には、身分証番号、パスワード、クレジットカード番号などの機密情報を保存しないでください。"
+      }
+    },
+    "importCSV": {
+      "comment": "Button: import the custom dictionary from a CSV file.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "匯入自訂詞",
+        "tailo": "huē-ji̍p tsū-tīng-sû",
+        "poj": "hōe-ji̍p chū-tēng-sû",
+        "en": "Import Custom Words",
+        "ja": "カスタム単語をインポート"
+      }
+    },
+    "exportCSV": {
+      "comment": "Button: export the custom dictionary to a CSV file.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "匯出自訂詞",
+        "tailo": "huē-tshut tsū-tīng-sû",
+        "poj": "hōe-chhut chū-tēng-sû",
+        "en": "Export Custom Words",
+        "ja": "カスタム単語をエクスポート"
+      }
+    },
+    "exportSuccess": {
+      "comment": "Toast/dialog confirming the custom dictionary exported successfully.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "CSV 順利匯出",
+        "tailo": "CSV sūn-lī huē-tshut",
+        "poj": "CSV sūn-lī hōe-chhut",
+        "en": "CSV exported successfully",
+        "ja": "CSV をエクスポートしました"
+      }
+    },
+    "importResult": {
+      "comment": "Import-result message: number of entries imported and number skipped (duplicates / overflow / write failures). Shared by custom-dictionary, frequency, and association imports (iOS importResultFormat).",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "placeholders": {
+        "imported": "int",
+        "skipped": "int"
+      },
+      "values": {
+        "hanji": "成功匯入 {imported} 項，跳過 {skipped} 項",
+        "tailo": "sîng-kong huē-ji̍p {imported} hāng, thiàu-kuè {skipped} hāng",
+        "poj": "sêng-kong hōe-ji̍p {imported} hāng, thiàu-kòe {skipped} hāng",
+        "en": "Imported {imported}, skipped {skipped}",
+        "ja": "{imported} 件をインポート、{skipped} 件をスキップ"
+      }
+    },
+    "invalidCSVFormat": {
+      "comment": "Error: the imported file is not valid CSV.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "檔案格式無正確，請使用 CSV 格式",
+        "tailo": "tòng-àn keh-sik bô tsìng-khak, tshiánn sú-iōng CSV keh-sik",
+        "poj": "tòng-àn keh-sek bô chèng-khak, chhiáⁿ sú-iōng CSV keh-sek",
+        "en": "Invalid file format. Please use CSV.",
+        "ja": "ファイル形式が正しくありません。CSV 形式を使用してください。"
+      }
+    },
+    "fileTooLarge": {
+      "comment": "Error: the imported file exceeds the 5 MB size limit.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "檔案傷大（上限 5 MB）",
+        "tailo": "tòng-àn siong tuā (siōng hān 5 MB)",
+        "poj": "tòng-àn siong tōa (siōng hān 5 MB)",
+        "en": "File too large (5 MB limit)",
+        "ja": "ファイルが大きすぎます（上限 5 MB）"
+      }
+    },
+    "tooManyEntries": {
+      "comment": "Error: the import exceeds the 30,000-entry cap.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "詞傷濟（上限 30,000 項）",
+        "tailo": "sû siunn-tse (siōng hān 30,000 hāng)",
+        "poj": "sû siuⁿ-che (siōng hān 30,000 hāng)",
+        "en": "Too many entries (30,000 limit)",
+        "ja": "単語が多すぎます（上限 30,000 件）"
+      }
+    },
+    "importExportTitle": {
+      "comment": "Section title for the import/export controls.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "匯入佮匯出",
+        "tailo": "huē-ji̍p kah huē-tshut",
+        "poj": "hōe-ji̍p kah hōe-chhut",
+        "en": "Import / Export",
+        "ja": "インポート / エクスポート"
+      }
+    },
+    "frequencyExportCSV": {
+      "comment": "Button: export the word-frequency records to a CSV file.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "匯出詞頻紀錄",
+        "tailo": "huē-tshut sû pîn kì-lio̍k",
+        "poj": "hōe-chhut sû pîn kì-lio̍k",
+        "en": "Export Frequency Records",
+        "ja": "単語頻度の記録をエクスポート"
+      }
+    },
+    "frequencyImportCSV": {
+      "comment": "Button: import word-frequency records from a CSV file.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "匯入詞頻紀錄",
+        "tailo": "huē-ji̍p sû pîn kì-lio̍k",
+        "poj": "hōe-ji̍p sû pîn kì-lio̍k",
+        "en": "Import Frequency Records",
+        "ja": "単語頻度の記録をインポート"
+      }
+    },
+    "frequencyDescription": {
+      "comment": "Description of the word-frequency CSV format (column layout).",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "詞頻紀錄使用 CSV 純文字檔案，共 3 欄：漢字、台羅、次數，毋免囥標題。舊版的「漢字、次數」2 欄格式嘛會當匯入。",
+        "tailo": "sû pîn kì-lio̍k sú-iōng CSV sûn bûn-jī tòng-àn, kā 3 lân: hàn-jī, tâi-lô, tshù-siàu, m̄-bián khǹg piau-tê. kū-pán ê \"hàn-jī, tshù-siàu\" 2 lân keh-sik mā ē-tàng huē-ji̍p.",
+        "poj": "sû pîn kì-lio̍k sú-iōng CSV sûn bûn-jī tòng-àn, kā 3 lân: hàn-jī, tâi-lô, chhù-siàu, m̄-bián khǹg piau-tê. kū-pán ê \"hàn-jī, chhù-siàu\" 2 lân keh-sek mā ē-tàng hōe-ji̍p.",
+        "en": "Frequency records use a CSV text file with 3 columns: Hanji, Tâi-lô, and count. No header row. The legacy 2-column format, Hanji and count, is also accepted.",
+        "ja": "単語頻度の記録は、漢字・台羅・回数の 3 列からなる CSV テキストファイルを使用します。ヘッダー行は不要です。旧形式の「漢字・回数」の 2 列もインポートできます。"
+      }
+    },
+    "associationExportCSV": {
+      "comment": "Button: export the word-association records to a CSV file.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "匯出詞關聯紀錄",
+        "tailo": "huē-tshut sû kuan-liân kì-lio̍k",
+        "poj": "hōe-chhut sû koan-liân kì-lio̍k",
+        "en": "Export Association Records",
+        "ja": "単語連携の記録をエクスポート"
+      }
+    },
+    "associationImportCSV": {
+      "comment": "Button: import word-association records from a CSV file.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "匯入詞關聯紀錄",
+        "tailo": "huē-ji̍p sû kuan-liân kì-lio̍k",
+        "poj": "hōe-ji̍p sû koan-liân kì-lio̍k",
+        "en": "Import Association Records",
+        "ja": "単語連携の記録をインポート"
+      }
+    },
+    "associationDescription": {
+      "comment": "Description of the word-association CSV format (5-column layout).",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "詞關聯紀錄使用 CSV 純文字檔案，共 5 欄：頭前詞、頭前拍字、後壁詞、後壁拍字、次數，毋免囥標題。",
+        "tailo": "sû kuan-liân kì-lio̍k sú-iōng CSV sûn bûn-jī tòng-àn, kā 5 nuâ: thâu-tsîng sû, thâu-tsîng phah-jī, āu-piah sû, āu-piah phah-jī, tshù siàu, m̄-bián khǹg piau-tuê.",
+        "poj": "sû koan-liân kì-lio̍k sú-iōng CSV sûn bûn-jī tòng-àn, kā 5 nôa: thâu-chêng sû, thâu-chêng phah-jī, āu-piah sû, āu-piah phah-jī, chhù siàu, m̄-bián khǹg piau-tôe.",
+        "en": "Association records use a plain-text CSV file with 5 columns: previous word, previous romanization, next word, next romanization, count. No header row.",
+        "ja": "単語連携の記録は 5 列のプレーンテキスト CSV ファイルを使用します：前の単語、前のローマ字、次の単語、次のローマ字、回数。ヘッダー行は不要です。"
+      }
+    },
+    "moeSectionTitle": {
+      "comment": "Section header grouping MOE dictionary sources.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "教育部用字",
+        "tailo": "kàu-io̍k-pōo iōng-jī",
+        "poj": "kàu-io̍k-pō͘ iōng-jī",
+        "en": "MOE Characters",
+        "ja": "教育部の用字"
+      }
+    },
+    "otherSectionTitle": {
+      "comment": "Section header grouping non-MOE dictionary sources.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "其他辭典",
+        "tailo": "kî-thann sû-tián",
+        "poj": "kî-thaⁿ sû-tián",
+        "en": "Other Dictionaries",
+        "ja": "その他の辞書"
+      }
+    },
+    "supplementSectionTitle": {
+      "comment": "Supplementary-data label. Section header grouping supplementary dictionary data AND the compact source badge for khpoo/khiin/dev/custom search results.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "補充資料",
+        "tailo": "póo-tshiong tsu-liāu",
+        "poj": "pó͘-chhiong chu-liāu",
+        "en": "Supplementary Data",
+        "ja": "補足データ"
+      }
+    },
+    "lkkDict": {
+      "comment": "Display name of the Han-Lo recommended-character dictionary source.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "漢羅合用建議用字",
+        "tailo": "hàn-lô ha̍h-īng kiàn-gī iōng-jī",
+        "poj": "hàn-lô ha̍h-ēng kiàn-gī iōng-jī",
+        "en": "Han-Lo Recommended Characters",
+        "ja": "漢羅併用 推奨用字"
+      }
+    },
+    "devSupplementDict": {
+      "comment": "Display name of the developer supplement dictionary file.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "詞庫增補檔案",
+        "tailo": "sû khòo tsing-póo tòng-àn",
+        "poj": "sû khò͘ cheng-pó͘ tòng-àn",
+        "en": "Supplementary Word List",
+        "ja": "補足単語リスト"
+      }
+    },
+    "kautianAccentLukang": {
+      "comment": "MOE dictionary accent sub-source: Lukang Quanzhou-leaning accent.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "鹿港偏泉腔",
+        "tailo": "lo̍k-káng phian tsuân-khiunn",
+        "poj": "lo̍k-káng phian choân-khiuⁿ",
+        "en": "Lukang (Quanzhou-leaning)",
+        "ja": "鹿港（泉州寄り）"
+      }
+    },
+    "kautianAccentSansia": {
+      "comment": "MOE dictionary accent sub-source: Sansia Quanzhou-leaning accent.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "三峽偏泉腔",
+        "tailo": "sam-kiap phian tsuân-khiunn",
+        "poj": "sam-kiap phian choân-khiuⁿ",
+        "en": "Sansia (Quanzhou-leaning)",
+        "ja": "三峡（泉州寄り）"
+      }
+    },
+    "kautianAccentTaipak": {
+      "comment": "MOE dictionary accent sub-source: Taipei Quanzhou-leaning accent.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "臺北偏泉腔",
+        "tailo": "tâi-pak phian tsuân-khiunn",
+        "poj": "tâi-pak phian choân-khiuⁿ",
+        "en": "Taipei (Quanzhou-leaning)",
+        "ja": "台北（泉州寄り）"
+      }
+    },
+    "kautianAccentGilan": {
+      "comment": "MOE dictionary accent sub-source: Yilan Zhangzhou-leaning accent.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "宜蘭偏漳腔",
+        "tailo": "gî-lân phian tsiang-khiunn",
+        "poj": "gî-lân phian chiang-khiuⁿ",
+        "en": "Yilan (Zhangzhou-leaning)",
+        "ja": "宜蘭（漳州寄り）"
+      }
+    },
+    "kautianAccentTainan": {
+      "comment": "MOE dictionary accent sub-source: Tainan mixed accent.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "臺南混合腔",
+        "tailo": "tâi-lâm hūn-ha̍p khiunn",
+        "poj": "tâi-lâm hūn-ha̍p khiuⁿ",
+        "en": "Tainan (Mixed)",
+        "ja": "台南（混合）"
+      }
+    },
+    "kautianAccentKaohsiung": {
+      "comment": "MOE dictionary accent sub-source: Kaohsiung mixed accent.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "高雄混合腔",
+        "tailo": "ko-hiông hūn-ha̍p khiunn",
+        "poj": "ko-hiông hūn-ha̍p khiuⁿ",
+        "en": "Kaohsiung (Mixed)",
+        "ja": "高雄（混合）"
+      }
+    },
+    "kautianAccentKinmen": {
+      "comment": "MOE dictionary accent sub-source: Kinmen Quanzhou-leaning accent.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "金門偏泉腔",
+        "tailo": "kim-mn̂g phian tsuân-khiunn",
+        "poj": "kim-mn̂g phian choân-khiuⁿ",
+        "en": "Kinmen (Quanzhou-leaning)",
+        "ja": "金門（泉州寄り）"
+      }
+    },
+    "kautianAccentMakung": {
+      "comment": "MOE dictionary accent sub-source: Makung Quanzhou-leaning accent.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "馬公偏泉腔",
+        "tailo": "bé-kang phian tsuân-khiunn",
+        "poj": "bé-kang phian choân-khiuⁿ",
+        "en": "Makung (Quanzhou-leaning)",
+        "ja": "馬公（泉州寄り）"
+      }
+    },
+    "kautianAccentSintik": {
+      "comment": "MOE dictionary accent sub-source: Hsinchu Quanzhou-leaning accent.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "新竹偏泉腔",
+        "tailo": "sin-tik phian tsuân-khiunn",
+        "poj": "sin-tek phian choân-khiuⁿ",
+        "en": "Hsinchu (Quanzhou-leaning)",
+        "ja": "新竹（泉州寄り）"
+      }
+    },
+    "kautianAccentTaichung": {
+      "comment": "MOE dictionary accent sub-source: Taichung Zhangzhou-leaning accent.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "臺中偏漳腔",
+        "tailo": "tâi-tiong phian tsiang-khiunn",
+        "poj": "tâi-tiong phian chiang-khiuⁿ",
+        "en": "Taichung (Zhangzhou-leaning)",
+        "ja": "台中（漳州寄り）"
+      }
+    },
+    "kautianNameAppendix": {
+      "comment": "MOE dictionary sub-source: surname appendix.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "姓名附錄",
+        "tailo": "sènn-miâ hù-lio̍k",
+        "poj": "sèⁿ-miâ hù-lio̍k",
+        "en": "Surname Appendix",
+        "ja": "姓名付録"
+      }
+    },
+    "searchPlaceholder": {
+      "comment": "Search-field placeholder in the dictionary browser, and the filter box on the macOS 自訂詞庫 pane.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "揣字",
+        "tailo": "tshuē jī",
+        "poj": "chhōe jī",
+        "en": "Type to search",
+        "ja": "入力して検索"
+      }
+    },
+    "noResults": {
+      "comment": "Empty-state message when a dictionary search returns nothing.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "揣無結果",
+        "tailo": "tshuē-bô kiat-kó",
+        "poj": "chhōe-bô kiat-kó",
+        "en": "No results",
+        "ja": "結果がありません"
+      }
+    },
+    "lookupChhoe": {
+      "comment": "External-lookup option: ChhoeTaigi dictionary.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "ChhoeTaigi 辭典",
+        "tailo": "ChhoeTaigi sû-tián",
+        "poj": "ChhoeTaigi sû-tián",
+        "en": "ChhoeTaigi Dictionary",
+        "ja": "ChhoeTaigi 辞典"
+      }
+    },
+    "lookupMoe": {
+      "comment": "External-lookup option: MOE dictionary.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "教育部辭典",
+        "tailo": "kàu-io̍k-pōo sû-tián",
+        "poj": "kàu-io̍k-pō͘ sû-tián",
+        "en": "MOE Dictionary",
+        "ja": "教育部辞典"
+      }
+    },
+    "frequencyManagement": {
+      "comment": "Page/section title for word-frequency record management.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "詞頻紀錄",
+        "tailo": "sû pîn kì-lio̍k",
+        "poj": "sû pîn kì-lio̍k",
+        "en": "Frequency Records",
+        "ja": "単語頻度の記録"
+      }
+    },
+    "frequencyRecordingEnabled": {
+      "comment": "Toggle label: enable recording of word-selection frequency.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "開啟詞頻紀錄",
+        "tailo": "khai-khé sû pîn kì-lio̍k",
+        "poj": "khai-khé sû pîn kì-lio̍k",
+        "en": "Record Word Frequency",
+        "ja": "単語頻度を記録"
+      }
+    },
+    "frequencyRecordingEnabledInfo": {
+      "comment": "Info-dialog body explaining what frequency recording does for candidate ranking.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "拍開了後，齒盤會記錄各詞揀過幾擺，定定揀 ê 詞會排較頭前。",
+        "tailo": "phah-khui liáu-āu, khí-puânn ē kì-lio̍k kok ê sû kíng kuè kuí-pái, tiānn-tiānn kíng ê sû ē pâi khah thâu-tsîng.",
+        "poj": "phah-khui liáu-āu, khí-pôaⁿ ē kì-lio̍k kok ê sû kéng kòe kúi-pái, tiāⁿ-tiāⁿ kéng ê sû ē pâi khah thâu-chêng.",
+        "en": "When on, the keyboard records how often you select each word. Frequently selected words move toward the front of the candidate list.",
+        "ja": "オンにすると、各単語を選んだ回数を記録します。よく選ぶ単語は候補リストの前方に移動します。"
+      }
+    },
+    "associationManagement": {
+      "comment": "Page/section title for word-association record management.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "詞關聯紀錄",
+        "tailo": "sû kuan-liân kì-lio̍k",
+        "poj": "sû koan-liân kì-lio̍k",
+        "en": "Association Records",
+        "ja": "単語連携の記録"
+      }
+    },
+    "associationRecordingEnabled": {
+      "comment": "Toggle label: enable recording of word-association (bigram) data.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "開啟詞關聯紀錄",
+        "tailo": "khai-khé sû kuan-liân kì-lio̍k",
+        "poj": "khai-khé sû koan-liân kì-lio̍k",
+        "en": "Record Word Associations",
+        "ja": "単語連携を記録"
+      }
+    },
+    "associationRecordingEnabledInfo": {
+      "comment": "Info-dialog body explaining what association recording does for next-word prediction.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "拍開了後，齒盤會記錄詞佮詞 ê 前後關係，用來改善下一詞建議。",
+        "tailo": "phah-khui liáu-āu, khí-puânn ē kì-lio̍k sû kah sû ê tsiân-āu kuan-hē, iōng lâi kái-siān ē tsi̍t ê sû kiàn-gī.",
+        "poj": "phah-khui liáu-āu, khí-pôaⁿ ē kì-lio̍k sû kah sû ê chiân-āu koan-hē, iōng lâi kái-siān ē chi̍t ê sû kiàn-gī.",
+        "en": "When on, the keyboard records which words follow each other to improve next-word suggestions.",
+        "ja": "オンにすると、単語の前後関係を記録し、次の単語の候補に利用します。"
+      }
+    },
+    "frequencyPrivacyWarning": {
+      "comment": "Privacy warning about sharing word-frequency data for research.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "詞頻紀錄可能會反映你揀過 ê 詞。匯出抑是分享進前，請先檢查敏感內容。關閉紀錄了後，齒盤袂閣學習你的候選詞排序。",
+        "tailo": "sû pîn kì-lio̍k khó-lîng ē huán-ìng lí kíng kuè ê sû. huē-tshut ah-sī hun-hióng tsìn-tsîng, tshiánn sian kiám-tsa bín-kám luē-iông. kuainn--khí-lâi liáu-āu, khí-puânn buē koh ha̍k-si̍p lí ê hāu-suán sû pâi-sī.",
+        "poj": "sû pîn kì-lio̍k khó-lêng ē hoán-èng lí kéng kòe ê sû. hōe-chhut ah-sī hun-hióng chìn-chêng, chhiáⁿ sian kiám-cha bín-kám lōe-iông. koaiⁿ--khí-lâi liáu-āu, khí-pôaⁿ bōe koh ha̍k-si̍p lí ê hāu-soán sû pâi-sī.",
+        "en": "Frequency records may reflect words you have selected. Check for sensitive content before exporting or sharing them. When recording is off, the keyboard stops learning your candidate ranking.",
+        "ja": "単語頻度の記録には、選んだ単語が反映される場合があります。エクスポートや共有の前に、機密情報が含まれていないか確認してください。記録をオフにすると、候補の並び順を学習しなくなります。"
+      }
+    },
+    "clearAllFrequency": {
+      "comment": "Destructive action: delete all word-frequency records.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "刪除所有詞頻紀錄",
+        "tailo": "san-tû sóo-iú sû pîn kì-lio̍k",
+        "poj": "san-tû só͘-iú sû pîn kì-lio̍k",
+        "en": "Delete All Frequency Records",
+        "ja": "すべての単語頻度の記録を削除"
+      }
+    },
+    "associationPrivacyWarning": {
+      "comment": "Privacy warning about sharing word-association data for research.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "詞關聯紀錄可能會反映你拍過 ê 詞組。匯出抑是分享進前，請先檢查敏感內容。關閉紀錄了後，齒盤袂閣學習你的下一詞使用習慣。",
+        "tailo": "sû kuan-liân kì-lio̍k khó-lîng ē huán-ìng lí phah kuè ê sû-tsoo. huē-tshut ah-sī hun-hióng tsìn-tsîng, tshiánn sian kiám-tsa bín-kám luē-iông. kuainn--khí-lâi liáu-āu, khí-puânn buē koh ha̍k-si̍p lí ê ē tsi̍t ê sû sú-iōng si̍p-kuàn.",
+        "poj": "sû koan-liân kì-lio̍k khó-lêng ē hoán-èng lí phah kòe ê sû-cho͘. hōe-chhut ah-sī hun-hióng chìn-chêng, chhiáⁿ sian kiám-cha bín-kám lōe-iông. koaiⁿ--khí-lâi liáu-āu, khí-pôaⁿ bōe koh ha̍k-si̍p lí ê ē chi̍t ê sû sú-iōng si̍p-koàn.",
+        "en": "Association records may reflect phrases you have typed. Check for sensitive content before exporting or sharing them. When recording is off, the keyboard stops learning your next-word habits.",
+        "ja": "単語連携の記録には、入力した語句が反映される場合があります。エクスポートや共有の前に、機密情報が含まれていないか確認してください。記録をオフにすると、次の単語の使い方を学習しなくなります。"
+      }
+    },
+    "clearAllAssociation": {
+      "comment": "Destructive action: delete all word-association records.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "刪除所有詞關聯紀錄",
+        "tailo": "san-tû sóo-iú sû kuan-liân kì-lio̍k",
+        "poj": "san-tû só͘-iú sû koan-liân kì-lio̍k",
+        "en": "Delete All Association Records",
+        "ja": "すべての単語連携の記録を削除"
+      }
+    },
+    "clearFrequencyMessage": {
+      "comment": "Confirmation dialog body for deleting all word-frequency records.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "確定欲刪除所有詞頻紀錄？",
+        "tailo": "khak-tīng beh san-tû sóo-iú sû pîn kì-lio̍k?",
+        "poj": "khak-tēng beh san-tû só͘-iú sû pîn kì-lio̍k?",
+        "en": "Delete all frequency records?",
+        "ja": "すべての単語頻度の記録を削除しますか？"
+      }
+    },
+    "clearAssociationMessage": {
+      "comment": "Confirmation dialog body for deleting all word-association records.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "確定欲刪除所有詞關聯紀錄？",
+        "tailo": "khak-tīng beh san-tû sóo-iú sû kuan-liân kì-lio̍k?",
+        "poj": "khak-tēng beh san-tû só͘-iú sû koan-liân kì-lio̍k?",
+        "en": "Delete all association records?",
+        "ja": "すべての単語連携の記録を削除しますか？"
+      }
+    },
+    "noData": {
+      "comment": "Empty-state message when a record list has no data.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "無資料",
+        "tailo": "bô tsu-liāu",
+        "poj": "bô chu-liāu",
+        "en": "No data",
+        "ja": "データがありません"
+      }
+    },
+    "filterHint": {
+      "comment": "Hint explaining the 100-item display cap and pointing to the search field.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "清單干焦顯示頭 100 項。欲揣其他紀錄，請用下跤 ê「揣字」。",
+        "tailo": "tshing-tuann kan-ta hián-sī thâu 100 hāng. beh tshuē kî-thann kì-lio̍k, tshiánn iōng ē-kha ê \"tshuē jī\".",
+        "poj": "chheng-toaⁿ kan-ta hián-sī thâu 100 hāng. beh chhōe kî-thaⁿ kì-lio̍k, chhiáⁿ iōng ē-kha ê \"chhōe jī\".",
+        "en": "The list shows the first 100 records. Use the \"Type to search\" field below to find other records.",
+        "ja": "一覧には先頭の 100 件だけを表示します。ほかの記録は、下の「入力して検索」で検索してください。"
+      }
+    },
+    "backupRestore": {
+      "comment": "Section title for full backup/restore of all user data.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "備份復原",
+        "tailo": "pī-hūn ho̍k-guân",
+        "poj": "pī-hūn ho̍k-goân",
+        "en": "Backup and Restore",
+        "ja": "バックアップと復元"
+      }
+    },
+    "exportBackup": {
+      "comment": "Button: export a full backup of all user data in one file.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "一擺全出",
+        "tailo": "tsi̍t-pái tsuân tshut",
+        "poj": "chi̍t-pái choân chhut",
+        "en": "Export All at Once",
+        "ja": "すべてを一括エクスポート"
+      }
+    },
+    "importBackup": {
+      "comment": "Button: import a full backup of all user data from one file.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "一擺全入",
+        "tailo": "tsi̍t-pái tsuân ji̍p",
+        "poj": "chi̍t-pái choân ji̍p",
+        "en": "Import All at Once",
+        "ja": "すべてを一括インポート"
+      }
+    },
+    "exportBackupSuccess": {
+      "comment": "Toast/dialog confirming the full backup exported successfully.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "備份順利匯出",
+        "tailo": "pī-hūn sūn-lī huē-tshut",
+        "poj": "pī-hūn sūn-lī hōe-chhut",
+        "en": "Backup exported successfully",
+        "ja": "バックアップをエクスポートしました"
+      }
+    },
+    "importBackupResult": {
+      "comment": "Backup-import result message: counts of custom-dictionary, frequency, and association records imported.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "placeholders": {
+        "customDict": "int",
+        "frequency": "int",
+        "association": "int"
+      },
+      "values": {
+        "hanji": "匯入 {customDict} 項自訂詞、{frequency} 項詞頻、{association} 項詞關聯",
+        "tailo": "huē-ji̍p {customDict} hāng tsū-tīng-sû,{frequency} hāng sû pîn,{association} hāng sû kuan-liân",
+        "poj": "hōe-ji̍p {customDict} hāng chū-tēng-sû,{frequency} hāng sû pîn,{association} hāng sû koan-liân",
+        "en": "Imported {customDict, plural, one {# custom entry} other {# custom entries}}, {frequency, plural, one {# frequency record} other {# frequency records}}, {association, plural, one {# association record} other {# association records}}",
+        "ja": "{customDict} 件のカスタム単語、{frequency} 件の単語頻度、{association} 件の単語連携をインポートしました"
+      }
+    },
+    "backupPrivacyWarning": {
+      "comment": "Privacy note that backup files contain all usage records and are cross-platform.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "備份檔案包含自訂詞、詞頻佮詞關聯紀錄，會當佇 iOS 佮 Android 匯入。檔案可能包含私人內容，請妥當保管。",
+        "tailo": "pī-hūn tòng-àn pau-hâm tsū-tīng-sû, sû pîn kah sû kuan-liân kì-lio̍k, ē-tàng tī iOS kah Android huē-ji̍p. tòng-àn khó-lîng pau-hâm su-jîn luē-iông, tshiánn thò-tòng pó-kuán.",
+        "poj": "pī-hūn tòng-àn pau-hâm chū-tēng-sû, sû pîn kah sû koan-liân kì-lio̍k, ē-tàng tī iOS kah Android hōe-ji̍p. tòng-àn khó-lêng pau-hâm su-jîn lōe-iông, chhiáⁿ thò-tòng pó-koán.",
+        "en": "A backup contains your custom words, frequency records, and association records. You can import it on iOS or Android. Store the file securely because it may contain private content.",
+        "ja": "バックアップには、カスタム単語、単語頻度、単語連携の記録が含まれます。iOS と Android のどちらでもインポートできます。個人的な内容が含まれる場合があるため、安全に保管してください。"
+      }
+    },
+    "moeDescription": {
+      "comment": "MOE Sutian dictionary — long description shown under its toggle in dictionary settings.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "台語、華語攏會當揣，詞目佮例句有發音通聽，學習較利便。閣有分類、部首筆劃索引佮附錄。",
+        "tailo": "Tâi-gí, huâ-gí lóng ē-tàng tshuē, sû-ba̍k kah lē-kù ū huat-im thang thiann, ha̍k-si̍p khah lī-piān. Koh ū hun-luī, pōo-siú pit-ue̍h sik-ín kah hù-lio̍k.",
+        "poj": "Tâi-gí, hôa-gí lóng ē-tàng chhōe, sû-ba̍k kah lē-kù ū hoat-im thang thiaⁿ, ha̍k-si̍p khah lī-piān. Koh ū hun-lūi, pō͘-siú pit-oe̍h sek-ín kah hù-lio̍k.",
+        "en": "Search Taiwanese Taigi and Mandarin, with audio for headwords and example sentences for easy learning. Includes category and radical-stroke indexes plus appendices.",
+        "ja": "台湾語と中国語で検索でき、見出し語と例文の発音を聞いて学習できます。分類索引・部首画数索引・付録付き。"
+      }
+    },
+    "newwordDescription": {
+      "comment": "Taigi TV new-words dictionary — toggle description in dictionary settings.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "台語台招專家學者，定期開會，討論新詞愛按怎用台語講較好，建立詞庫予逐家查、予逐家用。",
+        "tailo": "Tâi-gí-tâi tsio tsuan-ka ha̍k-tsiá, tīng-kî khui-huē, thó-lūn sin-sû ài àn-tsuánn iōng tâi-gí kóng khah hó, kiàn-li̍p sû-khòo hōo ta̍k-ke tsa, hōo ta̍k-ke iōng.",
+        "poj": "Tâi-gí-tâi chio choan-ka ha̍k-chiá, tēng-kî khui-hōe, thó-lūn sin-sû ài àn-chóaⁿ iōng tâi-gí kóng khah hó, kiàn-li̍p sû-khò͘ hō͘ ta̍k-ke cha, hō͘ ta̍k-ke iōng.",
+        "en": "Taigi TV invites experts and scholars to meet regularly, settle fitting Taigi terms for emerging words, and build a public lookup glossary.",
+        "ja": "台語テレビ局が専門家・学者を招き、定期的に会議を開いて新語の適切な台湾語表現を検討し、一般向けの検索辞書を構築しています。"
+      }
+    },
+    "sttiDescription": {
+      "comment": "MOE academic-terminology (STTI) dictionary — toggle description in dictionary settings.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "對 106 年開始，共語文、數學、社會、自然科學、藝術、綜合活動、科技、健康佮體育這 8 大領域 ê 學科術語編做台語。",
+        "tailo": "Tuì 106 nî khai-sí, kā gí-bûn, sòo-ha̍k, siā-huē, tsū-jiân kho-ha̍k, gē-su̍t, tsong-ha̍p ua̍h-tōng, kho-ki, kiān-khong kah thé-io̍k tsit 8 tāi líng-i̍k ê ha̍k-kho su̍t-gí pian-tsò tâi-gí.",
+        "poj": "Tuì 106 nî khai-sí, kā gí-bûn, sò͘-ha̍k, siā-hōe, chū-jiân kho-ha̍k, gē-su̍t, chong-ha̍p oa̍h-tōng, kho-ki, kiān-khong kah thé-io̍k chit 8 tāi léng-e̍k ê ha̍k-kho su̍t-gí pian-chò tâi-gí.",
+        "en": "Since 2017, the project has translated academic terminology from eight fields into Taigi: language arts, mathematics, social studies, natural science, arts, integrative activities, technology, and health and physical education.",
+        "ja": "2017年から、国語・数学・社会・自然科学・芸術・総合的活動・科学技術・保健体育の8領域の学科用語を台湾語に翻訳しています。"
+      }
+    },
+    "kunggeDescription": {
+      "comment": "Craft-terms (Kungge) dictionary — toggle description in dictionary settings.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "收規一千兩百組重要 ê 台語工藝詞，包括陶瓷、木藝、金工、竹藤、纖維、玻璃、漆藝、石藝、皮革、紙藝這 11 項工藝類別。",
+        "tailo": "Siu kui it-tshian nn̄g-pah tsoo tiōng-iàu ê tâi-gí kang-gē sû, pau-kuat tô-tsû, bo̍k-gē, kim-kang, tik-tîn, siam-uî, po-lê, tshat-gē, tsio̍h-gē, phuê-kik, tsuá-gē tsit 11 hāng kang-gē luī-pia̍t.",
+        "poj": "Siu kui it-chhian nn̄g-pah cho͘ tiōng-iàu ê tâi-gí kang-gē sû, pau-koat tô-chû, bo̍k-gē, kim-kang, tek-tîn, siam-ûi, po-lê, chhat-gē, chio̍h-gē, phôe-kek, chóa-gē chit 11 hāng kang-gē lūi-pia̍t.",
+        "en": "Over 1,200 key Taigi craft terms covering eleven categories such as ceramics, woodcraft, metalwork, bamboo and rattan, fiber, glass, lacquer, stonework, leather, and paper craft.",
+        "ja": "陶磁・木工・金工・竹藤・繊維・ガラス・漆芸・石工・皮革・紙工など11分野にわたる、1,200組を超える台湾語の工芸用語を収録。"
+      }
+    },
+    "lkkDescription": {
+      "comment": "Lí Kang-Khioh Foundation Han-Roman dictionary — toggle description in dictionary settings.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "李江却台語文教基金會漢羅合用建議用字。",
+        "tailo": "Lí Kang Khioh tâi-gí bûn-kàu ki-kim-huē hàn-lô ha̍h-īng kiàn-gī iōng-jī.",
+        "poj": "Lí Kang Khioh tâi-gí bûn-kàu ki-kim-hōe hàn-lô ha̍h-ēng kiàn-gī iōng-jī.",
+        "en": "Suggested Han-Roman mixed-script characters from the Lí Kang-Khioh Taigi Culture and Education Foundation.",
+        "ja": "李江却台語文教基金会による漢字ローマ字混在表記の推奨用字。"
+      }
+    },
+    "devDescription": {
+      "comment": "Developer supplement dictionary — toggle description in dictionary settings.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "補充政府機關、常見人名、行政區、數字、時間、日期佮其他教典較少收錄 ê 詞。",
+        "tailo": "póo-tshiong tsìng-hú ki-kuan, siông-kiàn jîn-miâ, hîng-tsìng-khu, sòo-jī, sî-kan, ji̍t-kî kah kî-thann kàu-tián khah tsió siu-lio̍k ê sû.",
+        "poj": "pó͘-chhiong chèng-hú ki-koan, siông-kiàn jîn-miâ, hêng-chèng-khu, sò͘-jī, sî-kan, ji̍t-kî kah kî-thaⁿ kàu-tián khah chió siu-lio̍k ê sû.",
+        "en": "Adds government agencies, common names, administrative divisions, dates, times, numbers, and other words with limited coverage in the MOE Dictionary.",
+        "ja": "政府機関、一般的な人名、行政区、日付、時刻、数字など、教育部辞典で収録の少ない語を補います。"
+      }
+    },
+    "iTaigiDescription": {
+      "comment": "iTaigi dictionary — info-button popup description.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "一个群眾編輯 ê 開放台語辭典",
+        "tailo": "Tsi̍t-ê kûn-tsiòng pian-tsi̍p ê khai-hòng tâi-gí sû-tián",
+        "poj": "Chi̍t-ê kûn-chiòng pian-chi̍p ê khai-hòng tâi-gí sû-tián",
+        "en": "A crowd-edited open Taigi dictionary.",
+        "ja": "みんなで編集するオープンな台湾語辞典。"
+      }
+    },
+    "taiwanJapanDescription": {
+      "comment": "Taiwan-Japan (Ogawa) dictionary — info-button popup description.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "日本時代小川尚義編纂 ê 台語辭典。",
+        "tailo": "Ji̍t-pún sî-tāi Siáu-tshuan Siōng-gī pian-tshuàn ê tâi-gí sû-tián.",
+        "poj": "Ji̍t-pún sî-tāi Siáu-chhoan Siōng-gī pian-chhoàn ê tâi-gí sû-tián.",
+        "en": "A Taigi dictionary compiled by Ogawa Naoyoshi during the Japanese era.",
+        "ja": "日本統治時代に小川尚義が編纂した台湾語辞典。"
+      }
+    },
+    "taiHuaDescription": {
+      "comment": "Taiwanese-Mandarin online dictionary — info-button popup description.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "「台華線頂辭典」是鄭良偉教授提供資料、楊允言教授編修。",
+        "tailo": "\"Tâi-huâ suànn-tíng sû-tián\" sī Tīng Liông-uí kàu-siū thê-kiong tsu-liāu, Iûnn Ín-giân kàu-siū pian-siu.",
+        "poj": "\"Tâi-hôa sòaⁿ-téng sû-tián\" sī Tēng Liông-úi kàu-siū thê-kiong chu-liāu, Iûⁿ Ín-giân kàu-siū pian-siu.",
+        "en": "The Taiwanese–Mandarin Online Dictionary: data provided by Prof. Tīng Liông-uí, edited by Prof. Iûnn Ín-giân.",
+        "ja": "「台華オンライン辞典」鄭良偉教授が資料を提供し、楊允言教授が編集。"
+      }
+    },
+    "taiwanPlantDescription": {
+      "comment": "Taiwan plant-names dictionary — info-button popup description.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "日本時代佐佐木舜一整理 ê 台灣植物台語名。",
+        "tailo": "Ji̍t-pún sî-tāi Tsò-tsò-bo̍k Sùn-it tsíng-lí ê Tâi-uân si̍t-bu̍t tâi-gí miâ.",
+        "poj": "Ji̍t-pún sî-tāi Chò-chò-bo̍k Sùn-it chéng-lí ê Tâi-oân si̍t-bu̍t tâi-gí miâ.",
+        "en": "Taigi names for Taiwanese plants, compiled by Sasaki Shun'ichi during the Japanese era.",
+        "ja": "日本統治時代に佐々木舜一がまとめた台湾の植物の台湾語名。"
+      }
+    },
+    "variantDescription": {
+      "comment": "Variant-characters source — info-button popup description.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "依據教典資料標示台語異用字。",
+        "tailo": "I-kì kàu-tián tsu-liāu phiau-sī tâi-gí ī-iōng-jī.",
+        "poj": "I-kì kàu-tián chu-liāu phiau-sī tâi-gí ī-iōng-jī.",
+        "en": "Marks Taigi variant characters based on MOE dictionary data.",
+        "ja": "教育部辞典のデータに基づき台湾語の異体字を表示。"
+      }
+    },
+    "khpooDescription": {
+      "comment": "Regional-accent supplement — info-button popup description.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "補充在地腔口差異",
+        "tailo": "Póo-tshiong tsāi-tuē khiunn-kháu tsha-ī.",
+        "poj": "Pó͘-chhiong chāi-tōe khiuⁿ-kháu chha-ī.",
+        "en": "Supplements regional accent differences.",
+        "ja": "各地の発音の違いを補足。"
+      }
+    },
+    "khiinDescription": {
+      "comment": "Khiin (native-characters) source — info-button popup description.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "補充「水台文」佮「台字田」使用 ê 在來字，拍開了後會加入候選詞。",
+        "tailo": "póo-tshiong \"Tsuí-tâi-bûn\" kah \"Tâi-jī-tshân\" sú-iōng ê tsāi-lâi jī, phah-khui liáu-āu ē ka-ji̍p hāu-suán sû.",
+        "poj": "pó͘-chhiong \"Chúi-tâi-bûn\" kah \"Tâi-jī-chhân\" sú-iōng ê chāi-lâi jī, phah-khui liáu-āu ē ka-ji̍p hāu-soán sû.",
+        "en": "Adds conventional characters used by Tsuí Tâi-bûn and Tâi-jī-tshân to candidate suggestions.",
+        "ja": "「水台文」と「台字田」で使われる在来字を候補に追加します。"
+      }
+    },
+    "kautianTag": {
+      "comment": "Dictionary-source badge tag for 教育部臺灣台語常用詞辭典 (MOE). Compact label on search-result rows.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "教典",
+        "tailo": "kàu-tián",
+        "poj": "kàu-tián",
+        "en": "MOE Dict",
+        "ja": "教育部辞典"
+      }
+    },
+    "taigitvTag": {
+      "comment": "Dictionary-source badge tag for 台語新詞辭庫 (PTS Taigi new-word lexicon). Compact label on search-result rows.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "台語新詞",
+        "tailo": "tâi-gí sin-sû",
+        "poj": "tâi-gí sin-sû",
+        "en": "Taigi New Words",
+        "ja": "台湾語新語"
+      }
+    },
+    "iTaigiTag": {
+      "comment": "Dictionary-source badge tag for iTaigi 華台對照典. Brand name — verbatim across all languages.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "iTaigi",
+        "tailo": "iTaigi",
+        "poj": "iTaigi",
+        "en": "iTaigi",
+        "ja": "iTaigi"
+      }
+    },
+    "sitbutTag": {
+      "comment": "Dictionary-source badge tag for 台灣植物名彙 (Taiwan plant-name glossary). Compact label on search-result rows.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "植物名彙",
+        "tailo": "si̍t-bu̍t bîng-luī",
+        "poj": "si̍t-bu̍t bêng-lūi",
+        "en": "Plant Names",
+        "ja": "植物名彙"
+      }
+    },
+    "taihoaTag": {
+      "comment": "Dictionary-source badge tag for 台華線頂對照典 (Taigi-Mandarin cross-reference). Compact label on search-result rows.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "台華對照",
+        "tailo": "tâi-huâ tuì-tsiàu",
+        "poj": "tâi-hôa tùi-chiàu",
+        "en": "Taigi-Mandarin",
+        "ja": "台華対照"
+      }
+    },
+    "taijitTag": {
+      "comment": "Dictionary-source badge tag for 台日大辭典 (Taiwanese-Japanese dictionary). Compact label on search-result rows.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "臺日",
+        "tailo": "tâi-ji̍t",
+        "poj": "tâi-ji̍t",
+        "en": "Taigi-Japanese",
+        "ja": "台日"
+      }
+    },
+    "kunggeTag": {
+      "comment": "Dictionary-source badge tag for 台語工藝詞庫 (NTCRI Taiwanese craft glossary). Compact label on search-result rows.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "工藝辭典",
+        "tailo": "kang-gē sû-tián",
+        "poj": "kang-gē sû-tián",
+        "en": "Craft Glossary",
+        "ja": "工芸用語"
+      }
+    },
+    "sttiTag": {
+      "comment": "Dictionary-source badge tag for 學科術語辭典 (MOE academic-subject terminology). Compact label on search-result rows.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "學科術語",
+        "tailo": "ha̍k-kho su̍t-gí",
+        "poj": "ha̍k-kho su̍t-gí",
+        "en": "Academic Terms",
+        "ja": "学術用語"
+      }
+    },
+    "lkkTag": {
+      "comment": "Dictionary-source badge tag for LKK 漢羅合用建議用字 (Han-Roman combined-use suggestion). Compact label on search-result rows.",
+      "scope": {
+        "platforms": [
+          "android",
+          "ios",
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "漢羅合用",
+        "tailo": "hàn-lô ha̍h-īng",
+        "poj": "hàn-lô ha̍h-ēng",
+        "en": "Han-Roman",
+        "ja": "漢羅併用"
+      }
+    }
+  }
+}

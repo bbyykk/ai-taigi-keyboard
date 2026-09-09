@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.siansiansu.taigikeyboard.ime.text.smartbar.SmartbarView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/smartbar"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/smartbar_height"
+    android:background="?smartbar_bgColor"
+    android:baselineAligned="false"
+    android:clipChildren="true"
+    tools:ignore="Overdraw,ContentDescription">
+
+    <!-- Toolbar toggle button: top-level, always visible (except number_row / layout_selection) -->
+    <com.siansiansu.taigikeyboard.ime.text.smartbar.SmartbarQuickActionButton
+        android:id="@+id/toolbar_toggle_button"
+        android:layout_width="36dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="2dp"
+        android:background="?smartbar_bgColor"
+        android:padding="6dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_add"
+        android:tint="?smartbar_fgColor" />
+
+    <!--
+        FrameLayout wrapper: allows content containers to overlap at full width
+        during slide transitions. Without this, the parent horizontal LinearLayout
+        would split width between two visible weighted children, breaking the animation.
+    -->
+    <FrameLayout
+        android:id="@+id/smartbar_content_frame"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:clipChildren="true">
+
+        <!-- Candidate container: candidate strip (Compose) + divider + expand toggle -->
+        <LinearLayout
+            android:id="@+id/candidates_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:baselineAligned="false"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <!--
+                Candidate strip (Compose). `android:baselineAligned="false"` on
+                BOTH this container and the outer SmartbarView is required: with
+                the default baselineAligned=true, AOSP LinearLayout.measureHorizontal
+                pre-measures `width=0+weight>0` children with UNSPECIFIED width
+                to query baseline, propagating Constraints.Infinity to the inner
+                LazyRow and crashing
+                "Horizontally scrollable component was measured with an infinity
+                maximum width constraints".
+            -->
+            <androidx.compose.ui.platform.ComposeView
+                android:id="@+id/candidates_compose"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1" />
+
+            <!-- Vertical divider -->
+            <View
+                android:id="@+id/candidate_divider"
+                android:layout_width="1dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="-40dp"
+                android:layout_marginEnd="0dp"
+                android:background="?android:attr/dividerVertical" />
+
+            <!-- Expand/collapse toggle -->
+            <ImageButton
+                android:id="@+id/expand_toggle_button"
+                android:layout_width="48dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="0dp"
+                android:layout_marginEnd="4dp"
+                android:background="?smartbar_bgColor"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:padding="2dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_keyboard_arrow_down"
+                app:tint="?smartbar_fgColor" />
+
+        </LinearLayout>
+
+        <!-- English mode 3-column candidate container -->
+        <LinearLayout
+            android:id="@+id/english_candidates_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <androidx.compose.ui.platform.ComposeView
+                android:id="@+id/english_candidates_compose"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </LinearLayout>
+
+        <!-- Toolbar container: 9 equal-width buttons evenly distributed -->
+        <LinearLayout
+            android:id="@+id/toolbar_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="1dp"
+            android:paddingEnd="1dp"
+            android:visibility="gone"
+            tools:ignore="HardcodedText">
+
+            <Button
+                android:id="@+id/toolbar_mode_poj"
+                style="@style/SmartbarToolbarMode"
+                android:singleLine="true"
+                android:ellipsize="none"
+                android:text="POJ" />
+
+            <Button
+                android:id="@+id/toolbar_mode_tl"
+                style="@style/SmartbarToolbarMode"
+                android:singleLine="true"
+                android:ellipsize="none"
+                android:text="TL" />
+
+            <Button
+                android:id="@+id/toolbar_mode_en"
+                style="@style/SmartbarToolbarMode"
+                android:singleLine="true"
+                android:ellipsize="none"
+                android:text="EN" />
+
+            <Button
+                android:id="@+id/toolbar_mode_tps"
+                style="@style/SmartbarToolbarMode"
+                android:singleLine="true"
+                android:ellipsize="none"
+                android:text="TPS" />
+
+            <!-- Symbol panel -->
+            <com.siansiansu.taigikeyboard.ime.text.smartbar.SmartbarQuickActionButton
+                android:id="@+id/toolbar_symbol_button"
+                style="@style/SmartbarToolbarIcon"
+                android:src="@drawable/ic_tag" />
+
+            <!-- Layout selection -->
+            <com.siansiansu.taigikeyboard.ime.text.smartbar.SmartbarQuickActionButton
+                android:id="@+id/toolbar_layout_button"
+                style="@style/SmartbarToolbarIcon"
+                android:src="@drawable/ic_photo" />
+
+            <!-- Globe (system IME picker) -->
+            <com.siansiansu.taigikeyboard.ime.text.smartbar.SmartbarQuickActionButton
+                android:id="@+id/toolbar_globe_button"
+                style="@style/SmartbarToolbarIcon"
+                android:src="@drawable/ic_language" />
+
+            <!-- Dismiss keyboard -->
+            <com.siansiansu.taigikeyboard.ime.text.smartbar.SmartbarQuickActionButton
+                android:id="@+id/toolbar_dismiss_button"
+                style="@style/SmartbarToolbarIcon"
+                android:src="@drawable/ic_keyboard_hide" />
+
+            <!-- Settings -->
+            <com.siansiansu.taigikeyboard.ime.text.smartbar.SmartbarQuickActionButton
+                android:id="@+id/toolbar_settings_button"
+                style="@style/SmartbarToolbarIcon"
+                android:src="@drawable/ic_settings" />
+
+        </LinearLayout>
+
+        <!-- TODO: integrate a KeyboardView instead of hardcoding these buttons -->
+        <LinearLayout
+            android:id="@+id/number_row"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            tools:ignore="HardcodedText">
+
+            <Button
+                android:id="@+id/number_row_1"
+                style="@style/SmartbarCandidate"
+                android:text="1" />
+
+            <Button
+                android:id="@+id/number_row_2"
+                style="@style/SmartbarCandidate"
+                android:text="2" />
+
+            <Button
+                android:id="@+id/number_row_3"
+                style="@style/SmartbarCandidate"
+                android:text="3" />
+
+            <Button
+                android:id="@+id/number_row_4"
+                style="@style/SmartbarCandidate"
+                android:text="4" />
+
+            <Button
+                android:id="@+id/number_row_5"
+                style="@style/SmartbarCandidate"
+                android:text="5" />
+
+            <Button
+                android:id="@+id/number_row_6"
+                style="@style/SmartbarCandidate"
+                android:text="6" />
+
+            <Button
+                android:id="@+id/number_row_7"
+                style="@style/SmartbarCandidate"
+                android:text="7" />
+
+            <Button
+                android:id="@+id/number_row_8"
+                style="@style/SmartbarCandidate"
+                android:text="8" />
+
+            <Button
+                android:id="@+id/number_row_9"
+                style="@style/SmartbarCandidate"
+                android:text="9" />
+
+            <Button
+                android:id="@+id/number_row_0"
+                style="@style/SmartbarCandidate"
+                android:text="0" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</com.siansiansu.taigikeyboard.ime.text.smartbar.SmartbarView>

@@ -1,0 +1,54 @@
+#![forbid(unsafe_code)]
+#![doc = include_str!("../../README.md")]
+
+// Phonetics crate entry point — TL/POJ/TPS conversion, tone normalization, case, and syllable parsing.
+
+// Public façade modules — the only externally-supported entry points.
+// Tests and other engine crates depend on these paths; everything else
+// stays mod-private per the domain↔proto boundary rule in
+// .claude/rules/rust-best-practices.md §3a.
+pub mod api;
+pub mod dispatch;
+
+mod case_tables;
+pub mod case_transform;
+mod custom_search;
+mod derivation;
+mod normalization;
+mod poj;
+mod syllable;
+mod tables;
+mod tl;
+mod tone_variations;
+mod tps;
+mod tps_adjust;
+mod tps_ambiguity;
+
+// Top-level re-exports — stable native-helper surface used by the dev
+// `cli` crate and integration tests. The cross-platform FFI envelope
+// is `engine/dispatch::process_request`; this crate exposes only the
+// in-process Rust API.
+pub use api::{
+    contains_tps, is_nasal_marker, is_word_material, to_tone_marks, to_tone_number,
+    toneless_reading_key, InputMode, PhoneticsError, System,
+};
+pub use normalization::{
+    has_tone_marks, is_combining_tone_mark, normalize_input, taigi_unicode_base_form,
+};
+pub use poj::to_poj;
+pub use syllable::{
+    canonicalize_poj_syllable, canonicalize_syllable, is_roman_acronym_key, is_valid_syllable,
+    nasal_oo_alias_spelling, normalize_to_poj, normalize_to_tl, poj_num_syllable_ends_from_tl,
+    strip_tone_mark, tl_num_syllable_ends_from_tl, NASAL_OO_ALIAS_SPELLING,
+    NORMALIZE_TO_POJ_GLYPH_RULES, NORMALIZE_TO_POJ_RULES, NORMALIZE_TO_TL_RULES, TL_ENCODING_RULES,
+};
+pub use tl::to_tl;
+pub use tps::{
+    canonicalize_tps_syllable, from_zhuyin as tps_to_tl, is_tps_char, is_tps_initial,
+    is_tps_initial_only, is_tps_tone_mark, is_tps_vowel_material, normalize_tps_tone8_scalar,
+    to_zhuyin as tl_numeric_token_to_tps, tps_abbrev_from_tl, tps_notone_from_tl,
+    tps_notone_or_variant, tps_notone_prefix_boundary_tone, tps_notone_syllable_ends_from_tl,
+    tps_num_from_tl, tps_num_syllable_ends_from_tl,
+};
+pub use tps_adjust::defold_coda_to_initial;
+pub use tps_ambiguity::{tps_ambiguity_family, TpsFamilyMember, TpsGlyphRole};

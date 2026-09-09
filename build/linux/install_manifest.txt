@@ -1,0 +1,9 @@
+/usr/local/lib/fcitx5/libtaigi.so
+/usr/local/lib/taigi-keyboard/liblinux_ffi.so
+/usr/local/share/fcitx5/addon/taigi-addon.conf
+/usr/local/share/fcitx5/inputmethod/taigi.conf
+/usr/local/share/taigi-keyboard/dictionaries/association.bin
+/usr/local/share/taigi-keyboard/dictionaries/dictionary.bin
+/usr/local/share/taigi-keyboard/dictionaries/dictionary.fst
+/usr/local/share/taigi-keyboard/dictionaries/syllables.fst
+/usr/local/share/doc/taigi-keyboard/LICENSE

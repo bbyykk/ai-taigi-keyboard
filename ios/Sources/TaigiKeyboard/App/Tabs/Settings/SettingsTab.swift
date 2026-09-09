@@ -1,0 +1,365 @@
+import KeyboardKit
+import SwiftUI
+import UIKit
+
+/// Settings tab.
+///
+/// Input mode, typing options, keyboard toggles, feedback, and diagnostics.
+/// Some toggles are shared with the keyboard extension through KeyboardKit `@AppStorage` in the App Group.
+struct SettingsTab: View {
+    @Environment(DisplayLanguageStore.self) private var lang
+    private let settings = SharedSettings.shared
+
+    @State private var selectedInputMode: InputMode
+    @State private var selectedFontType: FontType
+    @State private var autoSpaceEnabled: Bool
+    @State private var isDoubleTapOOEnabled: Bool
+    @State private var isDoubleTapNNEnabled: Bool
+    @State private var candidateDisplayMode: CandidateDisplayMode
+    @State private var isOutputBothScripts: Bool
+    @State private var literalRomanCandidateEnabled: Bool
+    @State private var isTpsOrMappedToER: Bool
+    @State private var toolbarAutoCollapse: Bool
+    @State private var isGlobeKeyEnabled: Bool
+    @State private var showResetSettingsAlert = false
+    @State private var diagnosticCopied = false
+    @State private var diagnosticText = ""
+    @Environment(\.openURL) private var openURL
+
+    /// KeyboardKit persisted settings via App Group
+    @AppStorage(
+        "com.keyboardkit.settings.keyboard.isAutocapitalizationEnabled",
+        store: UserDefaults(suiteName: SharedSettings.appGroupId),
+    )
+    private var autoCapitalizationEnabled = true
+
+    @AppStorage(
+        "com.keyboardkit.settings.feedback.isAudioFeedbackEnabled",
+        store: UserDefaults(suiteName: SharedSettings.appGroupId),
+    )
+    private var isAudioFeedbackEnabled = true
+
+    @AppStorage(
+        "com.keyboardkit.settings.feedback.isHapticFeedbackEnabled",
+        store: UserDefaults(suiteName: SharedSettings.appGroupId),
+    )
+    private var isHapticFeedbackEnabled = true
+
+    init() {
+        let settings = SharedSettings.shared
+
+        _selectedInputMode = State(initialValue: settings.inputMode)
+        _selectedFontType = State(initialValue: settings.fontType)
+        _autoSpaceEnabled = State(initialValue: settings.isAutoSpaceEnabled)
+        _isDoubleTapOOEnabled = State(initialValue: settings.isDoubleTapOOEnabled)
+        _isDoubleTapNNEnabled = State(initialValue: settings.isDoubleTapNNEnabled)
+        _candidateDisplayMode = State(initialValue: settings.candidateDisplayMode)
+        // Toggle binds the STORED flag: it keeps showing the user's choice while disabled under 羅馬字.
+        _isOutputBothScripts = State(initialValue: settings.storedIsOutputBothScripts)
+        _literalRomanCandidateEnabled = State(initialValue: settings.isLiteralRomanCandidateEnabled)
+        _isTpsOrMappedToER = State(initialValue: settings.isTpsOrMappedToER)
+        _toolbarAutoCollapse = State(initialValue: settings.isToolbarAutoCollapse)
+        _isGlobeKeyEnabled = State(initialValue: settings.isGlobeKeyEnabled)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                // App UI display language — its own Section (separate card), kept distinct from the
+                // input-mode row below so the two "language / mode" pickers don't read as related.
+                Section {
+                    NavigationLink {
+                        DisplayLanguagePickerView()
+                    } label: {
+                        HStack {
+                            Text(lang.string(.settingsDisplayLanguage))
+                            Spacer()
+                            Text(lang.selectionLabel(for: lang.selected))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                // Input mode
+                Section {
+                    NavigationLink {
+                        InputModePickerView(
+                            selectedMode: $selectedInputMode,
+                            onChange: { newValue in
+                                settings.inputMode = newValue
+                            },
+                        )
+                    } label: {
+                        HStack {
+                            Text(lang.string(.settingsInputMode))
+                            Spacer()
+                            Text(lang.string(selectedInputMode.displayNameKey))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                // Global keyboard font — its own Section (separate card) below 輸入模式.
+                // Applies to every theme (font is NOT per-theme); native Form grouped
+                // container, no hand-rolled card.
+                Section {
+                    NavigationLink {
+                        ThemeFontPickerView(
+                            selectedFont: $selectedFontType,
+                            onChange: { settings.fontType = $0 },
+                        )
+                    } label: {
+                        HStack {
+                            Text(lang.string(.themeCustomFont))
+                            Spacer()
+                            Text(lang.string(selectedFontType.displayNameKey))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                // Typing options
+                Section {
+                    // Default Form picker style = navigation-link row + selection subpage, the same
+                    // shape as the 輸入模式 / 字型 rows above without a bespoke subpage view.
+                    Picker(selection: $candidateDisplayMode) {
+                        ForEach(CandidateDisplayMode.allCases, id: \.self) { mode in
+                            Text(lang.string(mode.displayNameKey)).tag(mode)
+                        }
+                    } label: {
+                        Text(lang.string(.settingsCandidateDisplayMode))
+                    }
+                    .onChange(of: candidateDisplayMode) { _, newValue in
+                        settings.candidateDisplayMode = newValue
+                    }
+
+                    Toggle(isOn: $isOutputBothScripts) {
+                        HStack {
+                            Text(lang.string(.settingsOutputBothScripts))
+                            SettingInfoButton(description: featureSummary("hanloDesign"))
+                        }
+                    }
+                    // 括號標註 is meaningless without hanji; stored value stays untouched.
+                    .disabled(!candidateDisplayMode.showsHanji)
+                    .onChange(of: isOutputBothScripts) { _, newValue in
+                        settings.storedIsOutputBothScripts = newValue
+                    }
+
+                    Toggle(isOn: $literalRomanCandidateEnabled) {
+                        HStack {
+                            Text(lang.string(.settingsLiteralRomanCandidate))
+                            SettingInfoButton(description: lang.string(.settingsLiteralRomanCandidateInfo))
+                        }
+                    }
+                    .onChange(of: literalRomanCandidateEnabled) { _, newValue in
+                        settings.isLiteralRomanCandidateEnabled = newValue
+                    }
+
+                    Toggle(isOn: $autoCapitalizationEnabled) {
+                        HStack {
+                            Text(lang.string(.settingsAutoCapitalization))
+                            SettingInfoButton(description: featureSummary("caseSwitch"))
+                        }
+                    }
+
+                    Toggle(isOn: $autoSpaceEnabled) {
+                        HStack {
+                            Text(lang.string(.settingsAutoSpace))
+                            SettingInfoButton(description: featureSummary("hanloDesign"))
+                        }
+                    }
+                    .onChange(of: autoSpaceEnabled) { _, newValue in
+                        settings.isAutoSpaceEnabled = newValue
+                    }
+                } header: {
+                    Text(lang.string(.settingsTypingSectionTitle))
+                }
+
+                // Keyboard settings
+                Section {
+                    Toggle(isOn: $toolbarAutoCollapse) {
+                        HStack {
+                            Label {
+                                Text(lang.string(.settingsToolbarAutoCollapse))
+                            } icon: {
+                                Image(latinSystemName: SettingsIcons.toolbar)
+                                    .foregroundColor(AppStyle.accentBlue)
+                            }
+                            SettingInfoButton(description: lang.string(.settingsToolbarAutoCollapseInfo))
+                        }
+                    }
+                    .onChange(of: toolbarAutoCollapse) { _, newValue in
+                        settings.isToolbarAutoCollapse = newValue
+                    }
+
+                    Toggle(isOn: $isGlobeKeyEnabled) {
+                        HStack {
+                            Label {
+                                Text(lang.string(.settingsGlobeKey))
+                            } icon: {
+                                Image(latinSystemName: SettingsIcons.globeKey)
+                                    .foregroundColor(AppStyle.accentBlue)
+                            }
+                            SettingInfoButton(description: lang.string(.settingsGlobeKeyInfo))
+                        }
+                    }
+                    .onChange(of: isGlobeKeyEnabled) { _, newValue in
+                        settings.isGlobeKeyEnabled = newValue
+                    }
+                } header: {
+                    Text(lang.string(.settingsKeyboardSectionTitle))
+                }
+
+                // Feedback
+                Section {
+                    Toggle(isOn: $isAudioFeedbackEnabled) {
+                        Label(lang.string(.settingsSoundFeedback), systemImage: SettingsIcons.soundFeedback)
+                    }
+
+                    Toggle(isOn: $isHapticFeedbackEnabled) {
+                        Label(lang.string(.settingsVibrationFeedback), systemImage: SettingsIcons.vibrationFeedback)
+                    }
+                } header: {
+                    Text(lang.string(.settingsFeedbackSectionTitle))
+                        .font(AppStyle.sectionHeaderFont)
+                }
+
+                // POJ settings
+                Section {
+                    Toggle(lang.string(.settingsDoubleTapOO), isOn: $isDoubleTapOOEnabled)
+                        .onChange(of: isDoubleTapOOEnabled) { _, newValue in
+                            settings.isDoubleTapOOEnabled = newValue
+                        }
+
+                    Toggle(lang.string(.settingsDoubleTapNN), isOn: $isDoubleTapNNEnabled)
+                        .onChange(of: isDoubleTapNNEnabled) { _, newValue in
+                            settings.isDoubleTapNNEnabled = newValue
+                        }
+                } header: {
+                    Text(lang.string(.settingsPojSettingsSectionTitle))
+                        .font(AppStyle.sectionHeaderFont)
+                }
+
+                // TPS (方音符號) settings
+                Section {
+                    Toggle(isOn: $isTpsOrMappedToER) {
+                        HStack {
+                            Text(lang.string(.settingsTpsOrMapsToER))
+                            SettingInfoButton(description: lang.string(.settingsTpsOrMapsToERInfo))
+                        }
+                    }
+                    .onChange(of: isTpsOrMappedToER) { _, newValue in
+                        settings.isTpsOrMappedToER = newValue
+                    }
+                } header: {
+                    Text(lang.string(.settingsTpsSettingsSectionTitle))
+                        .font(AppStyle.sectionHeaderFont)
+                }
+
+                // Diagnostics
+                Section {
+                    Button {
+                        let info = DiagnosticService.gather()
+                        UIPasteboard.general.string = info.formatted()
+                        diagnosticCopied = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            diagnosticCopied = false
+                        }
+                    } label: {
+                        Label(
+                            diagnosticCopied
+                                ? lang.string(.settingsDiagnosticCopied)
+                                : lang.string(.settingsDiagnosticCopy),
+                            systemImage: diagnosticCopied ? "checkmark" : "doc.on.doc",
+                        )
+                        .foregroundColor(.primary)
+                    }
+
+                    ShareLink(
+                        item: diagnosticText,
+                        subject: Text("Taigi Keyboard Bug Report"),
+                        message: Text(diagnosticText),
+                    ) {
+                        Label(lang.string(.settingsDiagnosticShare), systemImage: "arrow.up.forward.square")
+                    }
+
+                    Button {
+                        let info = DiagnosticService.gather()
+                        let subject = "Taigi Keyboard Bug Report (v\(info.appVersion))"
+                            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                        let body = info.formatted()
+                            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                        if let url = URL(string: "mailto:info@taigikeyboard.tw?subject=\(subject)&body=\(body)") {
+                            openURL(url)
+                        }
+                    } label: {
+                        Label(lang.string(.settingsDiagnosticEmail), systemImage: "arrow.up.forward.square")
+                    }
+                } header: {
+                    Text(lang.string(.settingsDiagnosticSectionTitle))
+                        .font(AppStyle.sectionHeaderFont)
+                }
+
+                // Reset
+                Section {
+                    Button(role: .destructive) {
+                        showResetSettingsAlert = true
+                    } label: {
+                        Text(lang.string(.settingsResetSettings))
+                    }
+                }
+            }
+            .navigationTitle(lang.string(TabType.settings.titleKey))
+            .navigationBarTitleDisplayMode(.large)
+            .onAppear {
+                selectedInputMode = settings.inputMode
+                selectedFontType = settings.fontType
+                diagnosticText = DiagnosticService.gather().formatted()
+            }
+        }
+        .alert(lang.string(.settingsResetSettings), isPresented: $showResetSettingsAlert) {
+            Button(lang.string(.commonCancel), role: .cancel) {}
+            Button(lang.string(.settingsReset), role: .destructive) {
+                resetAllSettings()
+            }
+        } message: {
+            Text(lang.string(.settingsResetSettingsMessage))
+        }
+    }
+
+    // MARK: - Feature Summary Lookup
+
+    private func featureSummary(_ featureId: String) -> String {
+        FeatureContentLoader.features
+            .first(where: { $0.id == featureId })?
+            .summary?.resolve(for: lang.language) ?? ""
+    }
+
+    // MARK: - Actions
+
+    private func resetAllSettings() {
+        SettingsResetCoordinator.resetAll()
+        SettingsResetCoordinator.resetAllUserData()
+
+        // Sync local state
+        selectedInputMode = settings.inputMode
+        selectedFontType = settings.fontType
+        autoCapitalizationEnabled = true // KeyboardKit default
+        isAudioFeedbackEnabled = true
+        isHapticFeedbackEnabled = true
+        autoSpaceEnabled = settings.isAutoSpaceEnabled
+        isDoubleTapOOEnabled = settings.isDoubleTapOOEnabled
+        isDoubleTapNNEnabled = settings.isDoubleTapNNEnabled
+        candidateDisplayMode = settings.candidateDisplayMode
+        isOutputBothScripts = settings.storedIsOutputBothScripts
+        isTpsOrMappedToER = settings.isTpsOrMappedToER
+        toolbarAutoCollapse = settings.isToolbarAutoCollapse
+        isGlobeKeyEnabled = settings.isGlobeKeyEnabled
+        // Reset persists displayLanguage back to system (Automatic), but the live store is injected — sync it
+        // back so the UI language reverts immediately.
+        lang.syncFromSettings()
+
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+    }
+}

@@ -1,0 +1,132 @@
+import SwiftUI
+import UIKit
+import UniformTypeIdentifiers
+
+/// Backup/Restore sub-page
+/// Provides export and import of all user data, backed by
+/// `DataManagementViewModel` + `BackupService`.
+struct DataManagementView: View {
+    @Environment(DisplayLanguageStore.self) private var lang
+    @StateObject private var viewModel = DataManagementViewModel()
+
+    @State private var showBackupExporter = false
+    @State private var showBackupImporter = false
+    @State private var backupDocument: BackupDocument?
+    @State private var backupFilename = "taigi_backup.taigi"
+
+    @State private var showBackupResultAlert = false
+    @State private var backupResultMessage = ""
+    @State private var showExportSuccessAlert = false
+    @State private var showBackupErrorAlert = false
+    @State private var backupErrorMessage = ""
+
+    var body: some View {
+        List {
+            // Privacy warning
+            Section {
+                Text(lang.string(.dictionaryBackupPrivacyWarning))
+            }
+
+            // Backup/Restore
+            Section {
+                Button {
+                    exportBackup()
+                } label: {
+                    Label(
+                        lang.string(.dictionaryExportBackup),
+                        systemImage: "square.and.arrow.up",
+                    )
+                }
+                .disabled(viewModel.isProcessing)
+                if viewModel.isProcessing {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                } else {
+                    Button {
+                        showBackupImporter = true
+                    } label: {
+                        Label(
+                            lang.string(.dictionaryImportBackup),
+                            systemImage: "square.and.arrow.down",
+                        )
+                    }
+                }
+            }
+        }
+        .navigationTitle(lang.string(.dictionaryBackupRestore))
+        .navigationBarTitleDisplayMode(.large)
+        .fileExporter(
+            isPresented: $showBackupExporter,
+            document: backupDocument,
+            contentType: .taigiBackup,
+            defaultFilename: backupFilename,
+        ) { result in
+            if case .success = result {
+                showExportSuccessAlert = true
+            }
+        }
+        .fileImporter(
+            isPresented: $showBackupImporter,
+            allowedContentTypes: [.taigiBackup, .json],
+            allowsMultipleSelection: false,
+        ) { result in
+            handleBackupImport(result)
+        }
+        .alert(lang.string(.dictionaryExportBackup), isPresented: $showExportSuccessAlert) {
+            Button(lang.string(.commonOk)) {}
+        } message: {
+            Text(lang.string(.dictionaryExportBackupSuccess))
+        }
+        .alert(lang.string(.dictionaryImportBackup), isPresented: $showBackupResultAlert) {
+            Button(lang.string(.commonOk)) {}
+        } message: {
+            Text(backupResultMessage)
+        }
+        .alert(lang.string(.commonError), isPresented: $showBackupErrorAlert) {
+            Button(lang.string(.commonOk)) {}
+        } message: {
+            Text(backupErrorMessage)
+        }
+    }
+
+    // MARK: - Backup / Restore
+
+    private func exportBackup() {
+        Task {
+            do {
+                let payload = try await viewModel.exportBackup()
+                backupFilename = payload.filename
+                backupDocument = BackupDocument(payload.data)
+                showBackupExporter = true
+            } catch {
+                backupErrorMessage = error.localizedDescription
+                showBackupErrorAlert = true
+            }
+        }
+    }
+
+    private func handleBackupImport(_ result: Result<[URL], Error>) {
+        switch result {
+        case let .success(urls):
+            guard let url = urls.first else { return }
+            Task {
+                do {
+                    let importResult = try await viewModel.importBackup(url: url)
+                    backupResultMessage = lang.resolver.dictionaryImportBackupResult(
+                        customDict: importResult.customDict,
+                        frequency: importResult.frequency,
+                        association: importResult.association,
+                    )
+                    showBackupResultAlert = true
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                } catch {
+                    backupErrorMessage = error.localizedDescription
+                    showBackupErrorAlert = true
+                }
+            }
+        case let .failure(error):
+            backupErrorMessage = error.localizedDescription
+            showBackupErrorAlert = true
+        }
+    }
+}

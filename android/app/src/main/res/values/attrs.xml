@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="KeyboardTheme">
+        <attr name="semiTransparentColor" format="color" />
+
+        <attr name="key_bgColor" format="color" />
+        <attr name="key_bgColorPressed" format="color" />
+        <attr name="key_bgColorActive" format="color" />
+        <attr name="key_function_bgColor" format="color" />
+        <attr name="key_function_bgColorPressed" format="color" />
+        <attr name="key_fgColor" format="color" />
+        <attr name="key_enter_bgColor" format="color" />
+        <attr name="key_enter_bgColorPressed" format="color" />
+        <attr name="key_enter_fgColor" format="color" />
+
+        <attr name="key_popup_bgColor" format="color" />
+        <attr name="key_popup_fgColor" format="color" />
+
+        <attr name="key_popup_extended_bgColor" format="color" />
+        <attr name="key_popup_extended_bgColorActive" format="color" />
+        <attr name="key_popup_extended_shadowColor" format="color" />
+
+        <attr name="keyboard_bgColor" format="color" />
+
+
+        <attr name="smartbar_bgColor" format="color" />
+        <attr name="smartbar_fgColor" format="color" />
+        <attr name="smartbar_button_fgColor" format="color" />
+        <attr name="smartbar_candidate_fgColor" format="color" />
+        <attr name="smartbar_candidate_subtitle_fgColor" format="color" />
+
+        <attr name="smartbar_accentColor" format="color" />
+        <attr name="overlay_button_bgColorPressed" format="color" />
+    </declare-styleable>
+
+    <attr name="colorPrimary" format="color"/>
+    <attr name="colorPrimaryDark" format="color"/>
+    <attr name="colorAccent" format="color"/>
+
+</resources>

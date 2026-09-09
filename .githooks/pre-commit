@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Blocks a commit that stages a credential. Activated per clone by `make hooks`,
+# which sets core.hooksPath; a clone that never runs it commits with no gate, and
+# `--no-verify` skips it. There is no CI net behind it — the repository's only
+# workflow builds Windows release tags — so this hook is the only gate.
+#
+# The scan itself is scripts/gitleaks-scan.sh, shared with `make scan-secrets`,
+# so the entry points cannot drift apart.
+set -uo pipefail
+
+REPOSITORY_DIR="$(git rev-parse --show-toplevel)"
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks not installed — staged changes were NOT scanned." >&2
+  echo "  brew install gitleaks" >&2
+  exit 0
+fi
+
+if ! "$REPOSITORY_DIR/scripts/gitleaks-scan.sh" --staged; then
+  cat >&2 <<'MSG'
+
+pre-commit: if that was a finding, it is shown redacted above.
+
+  false positive -> add its fingerprint to .gitleaksignore, with a comment saying
+                    what the value actually is
+  real secret    -> unstage it, rotate the credential, and keep it out of the tree
+
+MSG
+  exit 1
+fi

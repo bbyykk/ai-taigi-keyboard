@@ -1,0 +1,29 @@
+//! Generated protobuf bindings for the Taigi engine wire types.
+//!
+//! Hand-written shell crate: every type is `include!`'d from the prost-build
+//! output (`$OUT_DIR/taigi.engine.rs`), regenerated each build by `build.rs`
+//! from `engine/protos/proto/{envelope,phonetics,composing,lexicon,nextword,
+//! case}.proto`. Platform-side bindings (iOS `.pb.swift`, Android `.java`)
+//! are NOT generated here — see `engine/scripts/gen-platform-protos.sh`.
+//!
+//! `clippy::all` + `clippy::pedantic` are silenced because the included
+//! prost output lints noisily and is regenerated on every build.
+
+#![allow(clippy::all, clippy::pedantic)]
+
+pub mod engine {
+    include!(concat!(env!("OUT_DIR"), "/taigi.engine.rs"));
+}
+
+impl engine::AppConfig {
+    /// Whether candidate cells render romanization only (候選詞顯示 = 羅馬字).
+    ///
+    /// The single normalisation point for `candidate_display_mode`: the
+    /// proto3 default `0`, an unknown value from a newer platform, and
+    /// `SIDE_BY_SIDE` all answer `false` (legacy behaviour), so the two
+    /// engine readers can never drift on the fallback.
+    pub fn is_roman_only_display(&self) -> bool {
+        // prost's accessor already maps an unknown value to `Unspecified`.
+        self.candidate_display_mode() == engine::CandidateDisplayMode::RomanOnly
+    }
+}

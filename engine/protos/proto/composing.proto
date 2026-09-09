@@ -1,0 +1,459 @@
+syntax = "proto3";
+
+package taigi.engine;
+
+// v3.5.8 Phase 9.3a — Continuous-input ranking gained access to the
+// per-candidate `user_frequency.db` snapshot; the request payload reuses
+// the canonical `taigi.engine.FrequencyEntry` defined in `lexicon.proto`
+// (already used by `ProcessCandidatesRequest.freq`) instead of declaring
+// a second wire-incompatible cousin. This is the only cross-file import
+// inside composing.proto; lexicon.proto does NOT import composing.proto,
+// so the dependency edge is one-way and cycle-free.
+import "lexicon.proto";
+
+option java_package = "com.siansiansu.taigikeyboard.engine.proto";
+option java_multiple_files = true;
+
+// Composing slice — Intent → Effect state machine.
+//
+// Mirrors the iOS `ComposingState.Intent` / Android `ComposingState.Intent`
+// case set 1:1 pre-migration. The Rust crate `engine/composing` owns the
+// state (`Phase::Idle | Composing { raw }` + `selected_candidate_index`)
+// inside a singleton `Mutex<Engine>` held by `EngineHandle`.
+//
+// Naming convention: `oneof method` matches the Phonetics/Lexicon dispatch
+// pattern adopted in PR #186.
+//
+// Lifecycle: every request carries `Request.generation`. A mismatch from the
+// engine's last-seen generation drops state to Idle BEFORE applying the
+// request (no effects emitted from the drop). See
+// `docs/engine/composing-slice-plan.md §5b.2` for the full semantic table.
+
+message ComposingRequest {
+  // Tag layout: text-input mutators in 10s, UI-driven ops (index update + pure
+  // read) in 20s, v3.5.8 continuous-input ops in 30s. Spacing leaves room for
+  // future families without renumbering existing variants.
+  oneof method {
+    // --- Text-input mutators (10s) ---
+    Start                           start                                = 10;
+    Append                          append                               = 11;
+    AppendHyphen                    append_hyphen                        = 12;
+    ReplaceLast                     replace_last                         = 13;
+    DeleteBackward                  delete_backward                      = 14;
+    CommitDerived                   commit_derived                       = 15;
+    CommitRaw                       commit_raw                           = 16;
+    SelectSuggestion                select_suggestion                    = 17;
+    CommitPreeditThenInsertExternal commit_preedit_then_insert_external  = 18;
+    Reset                           reset                                = 19;
+
+    // --- UI-driven ops (20s) ---
+    SetSelectedCandidateIndex       set_selected_candidate_index         = 20;
+    QueryState                      query_state                          = 21;
+
+    // --- Continuous-input ops (30s, v3.5.8 Phase 6) ---
+    EnterContinuous                 enter_continuous                     = 30;
+    FetchAtPos                      fetch_at_pos                         = 31;
+    CommitContinuous                commit_continuous                    = 32;
+    ResetContinuous                 reset_continuous                     = 33;
+
+    // --- Telex tone keys (40s, desktop Telex scheme) ---
+    TelexKey                        telex_key                            = 40;
+  }
+}
+
+// Begin a fresh composition buffer with `text`. Caret resets;
+// `selected_candidate_index` set to 0.
+message Start { string text = 1; }
+
+// Append a single character to the buffer. Idle → behaves as Start.
+message Append { string char = 1; }
+
+// Convenience alias for `Append("-")`. Kept distinct so call sites do not
+// synthesize hyphen strings on the wire.
+message AppendHyphen {}
+
+// TPS auto-correct: replace the last raw-input character. Intentionally
+// preserves `selected_candidate_index` (correction on top of an in-progress
+// selection, not a fresh composition step).
+message ReplaceLast { string replacement = 1; }
+
+// Delete one grapheme. Empties → Idle. iOS emits
+// `DeleteBackwardFromDocument`; Android wrapper routes 1-char-empty through
+// `Reset` instead (`composing-slice-plan.md §5b.1`).
+message DeleteBackward {}
+
+// Commit the tone-marked derived form to the document.
+message CommitDerived {}
+
+// Commit the literal raw input (bypass tone conversion). Used for
+// Enter-at-index-0 / English passthrough.
+message CommitRaw {}
+
+// Commit the supplied platform-resolved suggestion text, atomically
+// replacing the current preedit.
+message SelectSuggestion { string text = 1; }
+
+// Commit the current preedit (if any) and atomically insert externally
+// supplied text in one document write. Non-Taigi input surfaces (emoji
+// palette, clipboard paste). Idle → behaves as plain insert.
+message CommitPreeditThenInsertExternal { string text = 1; }
+
+// Clear all state (mode switch, teardown). User-initiated; emits
+// `[ClearPreeditWithoutCommit, ResetAutocomplete]` if was composing,
+// `[]` if was Idle.
+message Reset {}
+
+// Externally override `selected_candidate_index` (candidate-bar tap,
+// keyboard-arrow gesture). Pure index mutation; emits no effects.
+message SetSelectedCandidateIndex { int32 index = 1; }
+
+// Pure read — replaces platform `manager.isComposingText` getter without
+// shadowing engine state on the platform side. Returns current preedit +
+// is_composing + selected_candidate_index. Emits no effects.
+message QueryState {}
+
+// v3.5.8 Phase 6 — transition `Phase::Composing { raw }` → `Phase::Continuous
+// { raw, committed: [] }`. No payload: the buffer is already populated by
+// prior `Start` / `Append` calls. No-op when state is Idle / Continuous or
+// when the existing `Composing.raw` is empty (matches Phase-4 strict
+// precondition pinned at `engine/composing/src/transition.rs:484-490`).
+// Mode comes from `Request.config_snapshot.input_mode`.
+message EnterContinuous {}
+
+// v3.5.8 Phase 6 — Pure read: returns the candidate list for the current
+// `Phase::Continuous { raw }` starting at byte offset `position` (always
+// `0` in v3.5.8; field reserved for future partial-fetch capability and
+// validated to `0` today). The engine routes the raw buffer through
+// mode-specific key builders in `composing::dispatch` — TL/POJ via
+// `build_keys_tl` (which since Phase 9 Item 8 includes a hyphen-shadow
+// pre-pass so `tâi-uân` etc. produce the same `tl:<toneless>` keys as
+// `taiuan`), TPS via `build_keys_tps` (Bopomofo span → numeric TL →
+// strip → fused key) — and then hands the resulting `(consumed_span,
+// key)` pairs to `lexicon::fetch_candidates_for_keys`. Emits no
+// effects.
+//
+// v3.5.8 Phase 9.3a — `frequency_entries` carries the platform's
+// per-candidate `user_frequency.db` snapshot (count + last_used_ms,
+// keyed by `display_text_key` = `hanji ?? roman`). The engine builds
+// a `FrequencyMap` once per fetch, computes `user_freq_boost(count)`
+// per candidate (saturated at `MAX_BOOST = 5.0`), and derives the
+// `SortKey.recency_rank` axis from `now_ms − last_used_ms`. Empty
+// list = neutral 1.0 boost + rank 1 everywhere; backward-compatible
+// with PR-9.2 platform builds that have not yet wired the snapshot
+// (PR-9.3b plumbs iOS, PR-9.3c plumbs Android).
+//
+// `now_ms` is the platform's epoch-ms wall clock at fetch time
+// (iOS `Date().timeIntervalSince1970 * 1000`, Android
+// `System.currentTimeMillis()`). The engine guards against
+// `now_ms <= 0`, `last_used_ms <= 0`, and `now_ms < last_used_ms`
+// (clock skew) by falling through to `recency_rank = 1` for every
+// candidate — see `engine/ranking/src/score.rs::recency_rank`.
+//
+// v3.5.8 Phase 9 Item 12 — `custom_entries` carries the platform's
+// `custom_dictionary.db` matches for the current raw buffer. The DB
+// stays native (platform queries via the existing
+// `CustomDictionaryRepository.searchSync` / `CustomDictionaryService
+// .search` parameterized-SQL path); only the stored `(roman, hanji)`
+// columns are marshalled — NOT the legacy display-capitalized form,
+// so the engine's `(roman, hanji)` dedupe collides correctly against
+// `dict.bin` entries. The engine synthesizes a full-buffer
+// `RawCandidate` per entry (`consumed_span = (0, raw.len())`,
+// `is_custom = true` → `source_tier_rank` rank 0), merges them with
+// the FST hits, then dedupes by `(roman, hanji)` keeping the lowest
+// `source_tier_rank` (custom wins). Empty list = no custom matches /
+// feature disabled — fully backward-compatible (older builds simply
+// never set field 4). See `docs/engine/continuous-input-ranking.md`
+// §10.10 + `docs/engine/continuous-candidate-display.md` §15.
+//
+// PR-9.6 — `enabled_sources_bitmask` carries the user's dictionary
+// source-toggle state so keyboard continuous candidates honour the SAME
+// 12 source toggles + kautian subcollection (10 腔調 accents + 姓名 name
+// appendix) toggles the Tab3 browse path already applies. Same wire
+// layout as `SearchRequest.enabled_sources_bitmask` (sources/variant
+// bits 0-12 + kautian subcollection high region bits 13-25), produced by
+// the SAME `compute_filters` bridge both platforms call for browse — no
+// continuous-specific encoder, so browse and continuous can never drift.
+// The engine decodes it via `Filter::from_enabled_bitmask` inside
+// `composing::continuous::assemble_candidates` → `ContinuousFetchCtx`.
+//
+// SENTINEL: `0` (proto3 default) means "platform did not wire this" and
+// is normalised to `u32::MAX` (legacy all-on) in
+// `composing::dispatch::handle_fetch_at_pos`, reproducing the pre-PR-9.6
+// behaviour for older / un-wired builds. A real bitmask is never `0`
+// because `compute_filters` always sets the `dev` bit (bit 10), so `0`
+// is an unambiguous absence marker (mirrors the `assoc_lookup_bitmask`
+// `u32::MAX` sentinel + the kautian subcollection bit-13 absent=all-on
+// convention).
+//
+// §34 / S22 — `literal_roman_candidate_disabled` gates the always-on
+// preedit-literal roman candidate (the `derived_display` WYSIWYG row that
+// `handle_fetch_at_pos` prepends at index 0 in TL/POJ so 漢羅 mixing commits
+// the romanization in one tap). It does NOT suppress roman-only / OOV-synth
+// candidates that `assemble_candidates` produces naturally — only the §34
+// forced prepend.
+//
+// SENTINEL (inverted, mirrors the `enabled_sources_bitmask` legacy-default
+// idiom above): proto3 default `false` means "show" (= pre-toggle always-on
+// behaviour), so older / un-wired builds and proto-decoded fixtures keep the
+// candidate. The platform sends `true` only when the user turns the
+// 顯示當咧拍的字 setting OFF. Platform settings stay positive and ship ON on
+// all four platforms (`isLiteralRomanCandidateEnabled` iOS / macOS,
+// `literalRomanCandidateEnabled` Android, `is_literal_roman_candidate_enabled`
+// Windows); the platform sets `disabled = !enabled` — mobile in
+// `ComposingManager`, desktop in the engine bridge.
+message FetchAtPos {
+  uint32 position                          = 1;
+  repeated FrequencyEntry frequency_entries = 2;
+  int64 now_ms                             = 3;
+  repeated CustomDictEntry custom_entries  = 4;
+  uint32 enabled_sources_bitmask           = 5;
+  bool literal_roman_candidate_disabled    = 6;
+}
+
+// v3.5.8 Phase 9 Item 12 — one `custom_dictionary.db` row marshalled
+// for the Continuous candidate merge. `roman` / `hanji` are the raw
+// stored columns (no platform capitalization / tone re-display) so
+// the engine's `(roman, hanji)` dedupe key matches `dict.bin`'s
+// `DictionaryRecord.tl` / `.hanzi`. `hanji` uses proto3 `optional` so
+// a romanization-only custom entry (no hanji) is distinguishable from
+// an empty string, mirroring `CandidateMessage.hanji`.
+message CustomDictEntry {
+  string roman          = 1;
+  optional string hanji = 2;
+}
+
+// v3.5.8 Phase 6 — commit a candidate segment in `Phase::Continuous`. The
+// payload mirrors `Intent::CommitContinuous` (engine-side state machine
+// from Phase 4): the engine takes `pending[..consumed_bytes]` as the
+// committed segment's raw text and keeps the remainder as the new pending
+// tail. `consumed_bytes >= pending.len()` becomes a final commit (exit
+// to Idle). Programmer-error inputs (out-of-range / non-char-boundary
+// `consumed_bytes`, empty `display_text`) collapse to noop.
+//
+// **Platform contract**: when committing the user's tap on a candidate
+// returned by `FetchAtPos`, `consumed_bytes` MUST equal the chosen
+// `CandidateMessage.consumed_span_end` and `syllable_count` MUST equal
+// the chosen `CandidateMessage.syllable_count`. Sending different
+// values will mis-align the committed segment with the candidate the
+// user saw.
+message CommitContinuous {
+  // Document-committed string. v3.5.8 Phase 9 Bug 1: this is the
+  // swap/TPS/both-scripts-formatted output the platform tap handler
+  // produces (mirrors the legacy lexicon-path formatter), NOT the
+  // canonical dictionary key.
+  string display_text   = 1;
+  uint32 consumed_bytes = 2;
+  uint32 syllable_count = 3;
+  // v3.5.8 Phase 9 Bug 1 (Option A). Canonical dictionary key
+  // (`hanji.unwrap_or(roman)`) used for `user_frequency.db` / NextWord
+  // association so learning stays mode-independent. Wire-absent / empty
+  // (legacy callers, the other 12 methods) decodes as "" → engine falls
+  // back to `display_text`, preserving pre-Bug-1 behavior. Plain string
+  // (not `optional`): the empty-default IS the fallback signal, no
+  // presence distinction needed.
+  string canonical_text = 4;
+  // v3.6.1 R2 — canonical TL romanization of the committed candidate
+  // (`CandidateMessage.canonical_tl`, snapshotted BEFORE the POJ-render /
+  // recase passes rewrite `roman`). Becomes the `roman` arg of the
+  // NextWord `WordSelected` / `UpdateLastSelectedWord` effects so the
+  // learned association `prev_tl` / `next_tl` is the same canonical TL a
+  // normal (non-continuous) candidate commit records — fixing the
+  // continuous-vs-normal `next_tl` fragmentation (raw typed slice
+  // `taigi` vs canonical `tâi-gí`). Wire-absent / empty (legacy callers,
+  // the other 12 methods, TPS-OOV hanji-absent candidates with no dict
+  // TL) decodes as "" → engine falls back to the raw committed slice
+  // (`pending[..consumed_bytes]`), preserving pre-R2 behavior. Identity
+  // is the `(hanji, canonical-TL)` pair (Core Principle #7), so this is
+  // populated for hanji-present candidates too, NOT only hanji-absent.
+  string association_tl = 5;
+}
+
+// v3.5.8 Phase 6 — abort continuous-input. Drops `Phase::Continuous`
+// committed list and pending raw, exits to Idle, and emits the standard
+// abort effect trio (`ClearPreeditWithoutCommit` + `ResetAutocomplete` +
+// `NextWordClearForNewComposing`). Committed segments stay in the
+// document (already inserted via earlier `CommitTextReplacingPreedit`
+// effects).
+message ResetContinuous {}
+
+// Desktop Telex scheme: one key from `v y d w x q` (tones 2 3 5 7 8 9),
+// `z` (affricate initial `ts` / `ch` by `AppConfig.input_mode`) or `f`
+// (hyphen), either case. The engine edits the pending tail — appending or
+// replacing the trailing tone digit — and keeps the buffer numeric-tone.
+// A key that changes nothing (same tone twice, tone on an empty tail) is a
+// no-op. Idle + `z` enters composing with the expansion.
+message TelexKey { string key = 1; }
+
+message ComposingResponse {
+  message Preedit {
+    string raw_input    = 1;  // numeric tone, ASCII (search key)
+    string display_text = 2;  // diacritics (UI)
+  }
+
+  Preedit preedit                = 1;
+  repeated Effect effect         = 2;  // ordered side effects; prost preserves order
+  int32 selected_candidate_index = 3;  // -1 idle, 0 fresh, preserved on ReplaceLast
+  bool is_composing              = 4;  // mirrors `state.isComposing`
+
+  // v3.5.8 Phase 6 — continuous-input candidate carrier. Populated only by
+  // `FetchAtPos` (other continuous methods leave it absent: state-changing
+  // ops emit Effects, and the platform follows up with `FetchAtPos` to
+  // refresh the candidate strip — keeps each RPC single-purpose). Optional
+  // at the wire level: existing 12 methods leave it absent (proto3 zero-
+  // default safe). Pending-display text is NOT duplicated here — it is
+  // already in `preedit.display_text` for `Phase::Continuous`.
+  optional ContinuousResponse continuous = 5;
+}
+
+// v3.5.8 Phase 6 — payload for `FetchAtPos` responses. Carries the
+// span-local candidates that `lexicon::fetch_candidates_for_keys`
+// produced (via `composing::continuous::fetch_via_lexicon_inner` for
+// TL/POJ and `composing::continuous::build_keys_tps` for TPS) for the
+// current `Phase::Continuous { raw }`. v3.5.9 D7+D8 (#306) made
+// `fetch_candidates_for_keys` the sole production entry; the legacy
+// `lexicon::fetch_candidates_for_endings` wrapper is `#[doc(hidden)]`
+// test-only.
+message ContinuousResponse {
+  repeated CandidateMessage candidates = 1;
+}
+
+// v3.5.8 Phase 9.2 — candidate-type discriminator. MOE `VocType`
+// (`VT_HANT` / `VT_TAILO` / `VT_MIXED`) is the cite. Derived in Rust
+// from `DictionaryRecord.hanzi` presence + NFKD-normalized Latin-letter
+// detection; see `engine/lexicon/src/continuous.rs::derive_mode`.
+//
+// Metadata-only: this field does NOT enter the `SortKey` tie-break
+// in v3.5.8 (per `docs/releases/v3.5.8/plan.md` § Phase 9 R2 Q3.a — "reserve rank
+// use until real collisions are measured"). It is orthogonal to the
+// existing `form` axis (toneless / numeric / hanji / abbrev).
+//
+// `UNSPECIFIED = 0` is the proto3 default and never emitted by Rust;
+// platforms must treat `UNSPECIFIED` as "unknown carrier — fall back
+// to display-text sniff" rather than as HANT.
+enum CandidateMode {
+  CANDIDATE_MODE_UNSPECIFIED = 0;
+  CANDIDATE_MODE_HANT        = 1;
+  CANDIDATE_MODE_TAILO       = 2;
+  CANDIDATE_MODE_MIXED       = 3;
+}
+
+// v3.5.8 Phase 6 — single span-local continuous candidate. Wire mirror of
+// `lexicon::RawCandidate` (`engine/lexicon/src/continuous.rs:84-124`).
+//
+// `consumed_span` is encoded as two scalar fields rather than a nested
+// message to keep wire overhead low. `consumed_span_start` /
+// `consumed_span_end` are byte offsets in the **original raw user
+// input** stored in `Phase::Continuous { raw }` — not in any canonical
+// TL transform. TL / POJ users → ASCII bytes; TPS users → Bopomofo
+// bytes (Phase 6 dispatcher converts TPS spans to canonical TL FST
+// keys for lookup but emits the span back in the user-facing TPS byte
+// space). Platform UI slices `pending[start..end]` off
+// `Phase::Continuous { raw }` (or its preedit mirror) on commit.
+//
+// `form` is currently always `1` (FORM_NOTONE; see
+// `engine/lexicon/src/continuous.rs:78`); reserved for hanzi (0) /
+// numeric (2) / abbrev (3) when proto-side carriers exist.
+//
+// `mode` (Phase 9.2) is the MOE-aligned candidate-type discriminator;
+// see `CandidateMode` above.
+//
+// v3.5.8 Phase 9 Item 5 — `roman` + `hanji` are display-only
+// sidechannels added so platform UI can build dual-line cells
+// (roman / hanji) the same way the legacy lexicon path does. The
+// engine continues to authority-stamp commit semantics and
+// `user_frequency.db` write keys via `display_text`
+// (= `hanji.unwrap_or(roman)`); `roman` and `hanji` are NEVER read
+// for commit. `roman` is the display romanization for the active
+// input mode — the underlying `DictionaryRecord.tl` by default, or
+// POJ-display (`oo`→`o͘`, `nn`→`ⁿ`, …) when
+// `AppConfig.input_mode = poj` (engine-rendered, mirroring the
+// dictionary-search path); `hanji` mirrors `DictionaryRecord.hanzi`
+// (proto3 `optional` distinguishes "TAILO candidate — no hanji
+// exists" from "wire-frame defect"). See
+// `docs/engine/continuous-candidate-display.md` §4 for the full
+// rationale and `docs/engine/continuous-input-ranking.md` §10.11
+// for the companion ranker dedupe rule.
+message CandidateMessage {
+  uint32         consumed_span_start = 1;
+  uint32         consumed_span_end   = 2;
+  uint32         syllable_count      = 3;
+  string         display_text        = 4;
+  float          score               = 5;
+  uint32         form                = 6;
+  CandidateMode  mode                = 7;
+  string         roman               = 8;
+  optional string hanji              = 9;
+  // v3.6.1 R2 — canonical TL romanization (identity sidechannel). Unlike
+  // `roman` (field 8, the DISPLAY romanization — POJ-rendered in POJ mode,
+  // recased per the typed segment), this stays the canonical TL the
+  // `(hanji, canonical-TL)` word identity is keyed on (Core Principle #7):
+  // `DictionaryRecord.tl` for dict-backed candidates, or
+  // `phonetics::api::canonical_tl_form(native_roman, mode)` for
+  // custom / walker-synth candidates. Snapshotted at candidate
+  // construction, BEFORE the composing recase / POJ-render passes touch
+  // `roman`. The platform round-trips it back via
+  // `CommitContinuous.association_tl` so the NextWord association learns
+  // the same TL a normal candidate commit would. Empty iff no canonical
+  // TL is recoverable (TPS-OOV hanji-absent) — platform then omits
+  // `association_tl` and the engine falls back to the raw committed slice.
+  // NEVER consulted for the document commit (that goes through
+  // `display_text`).
+  string         canonical_tl        = 10;
+}
+
+// Platform-neutral effects. The wrapper maps document-mutation effects
+// (`UpdatePreedit` / `ClearPreeditWithoutCommit` / `CommitTextReplacingPreedit`
+// / `DeleteBackwardFromDocument`) to `setComposingText` / `commitText` /
+// `deleteSurroundingText` (Android) or `setMarkedText` / `clearMarkedText` +
+// `insertText` (iOS). Autocomplete-control effects (`ResetAutocomplete` /
+// `PerformAutocomplete` / `ResetAutocompleteContext`) route to the platform
+// autocomplete subsystem (stays platform-side until v3.5.5 NextWord slice).
+//
+// `NextWord*` effects (tags 8/9/10) are Phase 4 continuous-input handshake.
+// The platform FFI shim translates each to a `NextWordRequest` and dispatches
+// via `nextword::EngineHandle::instance().handle(req, config, generation)`,
+// injecting the current `now_ms` clock at dispatch time (composing engine has
+// no clock and emits effects without timestamps). This preserves the
+// `composing/handle.rs:54-58` lock-order rule — composing's `Mutex<Engine>`
+// is released before the platform makes the nextword call.
+message Effect {
+  oneof kind {
+    UpdatePreedit                  update_preedit                       = 1;
+    ClearPreeditWithoutCommit      clear_preedit_without_commit         = 2;
+    CommitTextReplacingPreedit     commit_text_replacing_preedit        = 3;
+    DeleteBackwardFromDocument     delete_backward_from_document        = 4;
+    ResetAutocomplete              reset_autocomplete                   = 5;
+    PerformAutocomplete            perform_autocomplete                 = 6;
+    ResetAutocompleteContext       reset_autocomplete_context           = 7;
+    NextWordUpdateLastSelectedWord next_word_update_last_selected_word  = 8;
+    NextWordWordSelected           next_word_word_selected              = 9;
+    NextWordClearForNewComposing   next_word_clear_for_new_composing    = 10;
+  }
+}
+
+message UpdatePreedit              { string display = 1; }
+message ClearPreeditWithoutCommit  {}
+message CommitTextReplacingPreedit { string text = 1; }
+message DeleteBackwardFromDocument {}
+message ResetAutocomplete          {}
+message PerformAutocomplete        {}
+message ResetAutocompleteContext   {}
+
+// Mid-commit handshake during continuous-input. Maps to
+// `NextWordRequest::UpdateLastSelectedWord(text, roman, now_ms)` on the
+// platform side. `text` is the committed segment's display (e.g., "紙"),
+// `roman` is the segment's raw input (e.g., "tsua"). Emitted only inside
+// `Phase::Continuous` mid-commit branches.
+message NextWordUpdateLastSelectedWord { string text = 1; string roman = 2; }
+
+// Final-commit handshake during continuous-input. Maps to
+// `NextWordRequest::WordSelected(text, roman, require_roman_mode=false,
+// trigger_prediction, now_ms)`. Emitted when `Phase::Continuous` exits to
+// Idle through commit (pending consumed in full).
+message NextWordWordSelected { string text = 1; string roman = 2; bool trigger_prediction = 3; }
+
+// Continuous-input abort. Maps to
+// `NextWordRequest::ClearForNewComposing(now_ms)`. Emitted when
+// `ResetContinuous` / `Reset` / empty-buffer `DeleteBackward` exits
+// `Phase::Continuous` without committing.
+message NextWordClearForNewComposing {}

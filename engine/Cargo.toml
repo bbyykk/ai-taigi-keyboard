@@ -1,0 +1,68 @@
+[workspace]
+members = [
+    "phonetics",
+    "composing",
+    "nextword",
+    "protos",
+    "ranking",
+    "dispatch",
+    "swift-ffi",
+    "android-jni",
+    "linux-ffi",
+    "build-helpers/fst-builder",
+    "mmap-host",
+    "lexicon",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.86"
+license = "Apache-2.0"
+repository = "https://github.com/taigikeyboard/taigikeyboard"
+
+[workspace.dependencies]
+prost = "0.14"
+prost-build = "0.14"
+unicode-normalization = "0.1"
+unicode-properties = "0.1"
+regex = "1"
+log = "0.4"
+thiserror = "2"
+proptest = "1"
+once_cell = "1"
+phonetics = { path = "./phonetics" }
+composing = { path = "./composing" }
+nextword = { path = "./nextword" }
+protos = { path = "./protos" }
+ranking = { path = "./ranking" }
+dispatch = { path = "./dispatch" }
+indexmap = "2"
+swift-bridge = "0.1"
+swift-bridge-build = "0.1"
+jni = "0.22"
+fst = "0.4"
+memmap2 = "0.9"
+mmap-host = { path = "./mmap-host" }
+lexicon = { path = "./lexicon" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+
+# Trim local dev/test link wall by dropping full DWARF; line tables stay so
+# panic backtraces + proptest shrinking still resolve to source lines.
+# Platform xcframework/jniLibs are always release-built per scripts/, so this
+# only affects `cargo build/check/test` on the host. To temporarily restore
+# full debuginfo for a debugging session:
+#   CARGO_PROFILE_DEV_DEBUG=2 cargo test -p <crate> ...
+[profile.dev]
+debug = "line-tables-only"

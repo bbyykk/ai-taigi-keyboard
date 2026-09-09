@@ -1,0 +1,17 @@
+[package]
+name = "linux-ffi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+prost.workspace = true
+once_cell.workspace = true
+composing.workspace = true
+lexicon.workspace = true
+protos.workspace = true
+

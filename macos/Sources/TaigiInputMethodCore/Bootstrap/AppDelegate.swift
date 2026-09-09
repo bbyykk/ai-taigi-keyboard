@@ -1,0 +1,183 @@
+// Application bootstrap: install guard, Rust logger sink, IMKServer.
+
+import AppKit
+import InputMethodKit
+
+/// Starts the IMKServer that feeds `TaigiInputController`.
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Strong reference. `IMKServer` owns the Mach connection that delivers key
+    /// events; letting it deallocate leaves a live-looking process that never
+    /// receives input.
+    private var server: IMKServer?
+
+    private let logger = DebugLogger(category: "Bootstrap")
+
+    func applicationDidFinishLaunching(_: Notification) {
+        guard AppDelegate.isInputMethodsCopy(Bundle.main.bundleURL) else {
+            // A build product carries the same bundle ID, so LaunchServices can
+            // start it instead of the installed copy; the two then fight over
+            // one IMKServer connection name and the loser gets no key events.
+            logger.error(
+                "launched from \(Bundle.main.bundleURL.path), not an Input Methods directory — exiting rather than competing with the installed copy",
+            )
+            exit(0)
+        }
+
+        RustEngineBridge.installLoggerSink()
+        // A bundle assembled without its fonts shows only as a picker whose
+        // every option draws alike, so it is worth one line at launch. About the
+        // BUNDLED roster only — a user's own typeface that fails to activate is
+        // reported by the library that owns it, and says something else entirely.
+        CandidateFontChoice.reportUnavailableFonts()
+        // The user's own typeface, if one is selected: registered here so the
+        // first candidate window of the session draws in it rather than in the
+        // system face, and so that nothing on the keystroke path has to. Only
+        // the selected one — the rest of the library is parsed when the settings
+        // window asks for the picker's roster.
+        CustomFontLibrary.shared.activate(fileName: SettingsStore().selectedCustomFontFile)
+        installLexiconEngine()
+        // Opening is asynchronous, so this only starts it. A composition typed
+        // before it finishes ranks without the user's history — one keystroke
+        // ordered as it would be on a fresh install, which is why this runs at
+        // launch rather than lazily on the first commit.
+        ComposingSessionCoordinator.shared.openUserDataStores()
+
+        // At launch rather than with the settings window: this is process-wide
+        // AppKit configuration, and the menu has to exist before any window of
+        // ours becomes key for its shortcuts to reach the first responder.
+        //
+        // The chrome AppKit copies rather than binds is re-rendered from HERE and nowhere else when
+        // the display language changes (see behavioral-invariants.md §37, Rendering split). SwiftUI
+        // needs nothing: it observes the store directly. Asserted single-assigner, because a second
+        // one would silently replace this and freeze whichever surface it owned.
+        assert(DisplayLanguageStore.shared.languageDidChange == nil)
+        DisplayLanguageStore.shared.languageDidChange = Self.refreshLocalizedChrome
+        Self.refreshLocalizedChrome()
+
+        // Before the handlers register, so nothing re-persists what it clears.
+        RetiredSettingsCleanup.run()
+
+        // Before the shadow resolution below: a migrated-in default that
+        // collides with a chord the user recorded elsewhere must land while
+        // the standing conflict policy can still see it.
+        ShortcutDefaultMigration.run()
+
+        // The other half of what an upgrade leaves behind: an `initial:` added
+        // in a later version installs itself on every install that never
+        // recorded that action, including one where the user had already put
+        // that chord on a different action — and `KeyboardShortcuts` fires BOTH
+        // handlers on one keypress. The recorder resolves the collisions the
+        // user makes; this resolves the ones a version does.
+        ShortcutConflicts.resolveDefaultsShadowedByRecordings()
+
+        // And the same job across the two registries, which no recorder can do
+        // for data that predates them: a global shortcut and a composing key
+        // sitting on one chord means the composing one never fires, because
+        // Carbon dispatches before the classifier runs.
+        ShortcutConflicts.resolveAcrossRegistries(in: SettingsStore())
+
+        // The hotkey handlers exist for the process's life; whether they FIRE
+        // is the coordinator's call, made as sessions register and release
+        // their shortcut endpoint. Assigned here rather than defaulted inside
+        // the coordinator so tests exercising it never touch Carbon.
+        ShortcutHotkeys.registerHandlers()
+        ComposingSessionCoordinator.shared.shortcutAvailabilityDidChange = ShortcutHotkeys.setEnabled
+
+        server = IMKServer(
+            name: Bundle.main.infoDictionary?["InputMethodConnectionName"] as? String,
+            bundleIdentifier: Bundle.main.bundleIdentifier,
+        )
+        if server == nil {
+            logger.error("IMKServer creation failed — this process receives no key events")
+        }
+
+        // Before the first check can post anything, and before launch is over:
+        // `UNUserNotificationCenter.delegate` is weak and Apple documents this
+        // as the deadline — a delegate set later is a notification tap that
+        // does nothing.
+        NotificationManager.shared.registerDelegate()
+
+        // The update check lives on the process's lifetime, not on any
+        // session's focus: one look shortly after launch, then a timer at the
+        // same cadence as the checker's own once-a-day stamp. The stamp stays
+        // the guard — it is what holds across relaunches and absorbs timer
+        // drift; the timer only keeps a weeks-lived agent asking, and a
+        // tolerance this generous lets the OS coalesce the wakeup.
+        //
+        // The first look is deferred off the wake path: this process is usually
+        // started BY a keystroke, and a DNS lookup plus a TLS handshake has no
+        // business competing with the first character. The daily stamp decides
+        // whether the check happens at all, so a minute either way is nothing.
+        // Anything a previous run staged goes now. Not deferred with the check
+        // below: by the time that timer fires the user may have opened the
+        // settings window and started a download, and a late "clean up what the
+        // last run left" would delete this run's.
+        UpdatePackageDownload.removeStagedPackages()
+        Task {
+            try? await Task.sleep(for: .seconds(30))
+            UpdateChecker.shared.checkAutomatically()
+        }
+        let updateCheckTimer = Timer(timeInterval: UpdateChecker.checkInterval, repeats: true) { _ in
+            Task { @MainActor in UpdateChecker.shared.checkAutomatically() }
+        }
+        updateCheckTimer.tolerance = UpdateChecker.checkInterval / 10
+        RunLoop.main.add(updateCheckTimer, forMode: .common)
+    }
+
+    /// Rebuilds the AppKit UI that reads its text once and keeps a copy.
+    ///
+    /// The main menu is rebuilt rather than relabelled — its items carry a selector, a key
+    /// equivalent and a title, and none of that is state a rebuild can lose. The settings window
+    /// needs nothing: its content is SwiftUI observing the store, and its titlebar follows the
+    /// selected pane's `navigationTitle` through the hosting controller's scene bridging.
+    @MainActor
+    private static func refreshLocalizedChrome() {
+        NSApp.mainMenu = MainMenu.make(DisplayLanguageStore.shared)
+    }
+
+    /// Loads the dictionary data the bundle ships with. Failures are logged and
+    /// left alone: an uninstalled engine returns no candidates, which is a
+    /// keyboard that types romanization but suggests nothing — far better than
+    /// refusing to launch and leaving the user with no input method at all.
+    private func installLexiconEngine() {
+        guard let resourceURL = Bundle.main.resourceURL else {
+            logger.error("bundle has no resource directory — lexicon not installed")
+            return
+        }
+        do {
+            let artifacts = try DictionaryArtifacts(baseURL: resourceURL)
+            // The bundle version doubles as the dictionary stamp: the data is
+            // rebuilt and re-bundled by the same release that bumps it.
+            let version = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String)
+                .flatMap(UInt32.init) ?? 1
+            guard let stats = RustEngineBridge.lexiconInstall(
+                artifacts: artifacts,
+                dictionaryVersion: version,
+            ) else {
+                logger.error("lexicon install returned no stats — engine not installed")
+                return
+            }
+            logger.info(
+                "lexicon installed: records=\(stats.dictionaryRecordCount) prefixEntries=\(stats.prefixIndexEntryCount) version=\(version)",
+            )
+        } catch {
+            logger.error("lexicon not installed: \(error)")
+        }
+    }
+
+    /// True when `bundleURL` sits directly inside an `Input Methods` directory,
+    /// which is the only place an input method is meant to run from. Symlinks
+    /// are resolved first so a symlinked install location still matches, and
+    /// the check is on the parent directory so both `~/Library` and `/Library`
+    /// qualify without hardcoding a home path (which the sandbox rewrites).
+    /// `nonisolated`: a pure path test with no AppKit state, called from the
+    /// launch guard and from tests that have no main actor to hop to.
+    nonisolated static func isInputMethodsCopy(_ bundleURL: URL) -> Bool {
+        bundleURL
+            .resolvingSymlinksInPath()
+            .standardizedFileURL
+            .deletingLastPathComponent()
+            .lastPathComponent == "Input Methods"
+    }
+}

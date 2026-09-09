@@ -1,0 +1,150 @@
+# === macOS ===
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+Icon
+
+# === Windows ===
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# === Linux ===
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# === JetBrains IDEs ===
+*.iml
+*.ipr
+*.iws
+.idea/
+!.idea/.name
+!.idea/codeStyles/
+!.idea/inspectionProfiles/
+
+# === Python ===
+__pycache__/
+*.py[codz]
+*$py.class
+*.so
+.Python
+dist/
+eggs/
+*.egg-info/
+*.egg
+.venv
+venv/
+ENV/
+.env
+.envrc
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# === Gradle ===
+.gradle/
+# Sandboxed GRADLE_USER_HOME (Claude Code bash redirects gradle downloads here
+# instead of polluting ~/.gradle/). Empty wrapper/dists/ leftovers are harmless.
+.gradle-home/
+
+# === Dictionary pipeline ===
+# Build/run logs from dictionary/ Python pipeline (build.sh, run.sh).
+dictionary/**/logs/
+# Write-only audit artifact: common/stages/cleanup.py writes it when a source drops rows; nothing reads it.
+dictionary/**/data/cleaned/drop.csv
+
+# === Rust ===
+/engine/target/
+**/*.rs.bk
+Cargo.lock.bak
+
+# === Rust shared-core platform artifacts ===
+# `make build` output: the iOS and macOS xcframeworks with their swift-bridge
+# wrappers, and the Android .so per ABI. These were committed under D9.2 so a
+# release tag carried a complete, buildable engine — reversed 2026-09-07 in
+# favour of a tag plus a reproducible `make build`, because the .a and .so were
+# rewritten into history on every engine change and accounted for most of the
+# repository's size.
+#
+# The stable paths themselves stay: ios/RustEngine/ and macos/RustEngine/ hold
+# the hand-written README and SwiftLoggerSink.swift, and Xcode / SwiftPM
+# reference the framework at a fixed location under them.
+ios/RustEngine/RustTaigi.xcframework/
+ios/RustEngine/RustTaigi.swift
+ios/RustEngine/SwiftBridgeCore.swift
+macos/RustEngine/RustTaigi.xcframework/
+macos/RustEngine/RustTaigi.swift
+macos/RustEngine/SwiftBridgeCore.swift
+android/app/src/main/jniLibs/**/*.so
+
+# === SwiftPM build cache (macOS input method) ===
+# `.build/` holds compiled products, the assembled `.app` from
+# macos/scripts/bundle-app.sh, and the signed installer packages from
+# macos/scripts/release-app.sh; `Package.resolved` is committed.
+macos/.build/
+macos/.swiftpm/
+
+# === Xcode build cache ===
+# DerivedData lives outside the repo by default, but xcodebuild with
+# `-derivedDataPath build/` (or a script that does) drops XCBuildData here.
+ios/build/
+
+# === Credentials ===
+# Nothing of this shape has ever been committed (verified over the full history,
+# 2026-09-05) and nothing should be. Ignoring the shapes keeps an accidental
+# `git add .` from staging one; .githooks/pre-commit and the Secrets workflow
+# catch what gets past this.
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.mobileprovision
+*.cer
+credentials.json
+client_secret*.json
+secrets.properties
+keystore.properties
+
+# === Claude Code ===
+.claude/settings.local.json
+.claude/projects/
+.claude/scheduled_tasks.lock
+
+# top-level cloned IME repos only — anchored so it does NOT match docs/references/ or spec/references
+/references/
+.tmp/
+# === Windows input method (windows/ Cargo workspace) ===
+windows/target/
+# `.build/` holds the staged install layout and the installer that
+# windows/scripts/release-app.sh produces — the macOS side's `macos/.build/`,
+# and it must be ignored for the same reason: the script refuses a dirty tree,
+# so its own output would make the next release un-cuttable.
+windows/.build/

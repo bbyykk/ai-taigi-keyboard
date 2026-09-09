@@ -1,0 +1,1481 @@
+{
+  "namespace": "desktop",
+  "keys": {
+    "generalTab": {
+      "comment": "Settings sidebar row + pane title: the general settings pane.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "一般",
+        "tailo": "it-puann",
+        "poj": "it-poaⁿ",
+        "en": "General",
+        "ja": "一般"
+      }
+    },
+    "shortcutOpenSettings": {
+      "comment": "Shortcut-recorder row: the hotkey that opens the settings window on whichever pane it was last left on. Each row is authored whole rather than composed from the setting's own label.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "拍開設定選單",
+        "tailo": "phah-khui siat-tīng suán-tuann",
+        "poj": "phah-khui siat-tēng soán-toaⁿ",
+        "en": "Open Settings Menu",
+        "ja": "設定メニューを開く"
+      }
+    },
+    "shortcutToggleRomanization": {
+      "comment": "Shortcut-recorder row: the hotkey that switches between the two romanizations. Each row is authored whole rather than composed from the setting's own label, whose wording is a verb phrase in several languages.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "切換輸入模式",
+        "tailo": "tshiat-uānn su-ji̍p bôo-sik",
+        "poj": "chhiat-ōaⁿ su-ji̍p bô͘-sek",
+        "en": "Switch Input Mode",
+        "ja": "入力モードを切り替える"
+      }
+    },
+    "shortcutToggleTranslateSwapped": {
+      "comment": "Shortcut-recorder row: the hotkey that flips which script is committed.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "輸出漢字/羅馬字",
+        "tailo": "su-tshut hàn-jī / lô-má-jī",
+        "poj": "su-chhut hàn-jī / lô-má-jī",
+        "en": "Output Hanji or Romanization",
+        "ja": "漢字／ローマ字を出力"
+      }
+    },
+    "shortcutCycleCandidateDisplayMode": {
+      "comment": "Shortcut-recorder row: the hotkey that cycles 候選詞顯示 through 漢羅並排 → 漢羅濫 → 羅馬字 (the picker order). Authored whole, like its siblings.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "切換候選詞顯示",
+        "tailo": "tshiat-uānn hāu-suán-sû hián-sī",
+        "poj": "chhiat-oāⁿ hāu-soán-sû hián-sī",
+        "en": "Switch Candidate Display",
+        "ja": "候補の表示を切り替え"
+      }
+    },
+    "menuFile": {
+      "comment": "Menu-bar File menu title. An LSUIElement process builds its own menu bar so the settings window keeps the standard editing shortcuts.",
+      "scope": {
+        "platforms": [
+          "macos"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "檔案",
+        "tailo": "tóng-àn",
+        "poj": "tóng-àn",
+        "en": "File",
+        "ja": "ファイル"
+      }
+    },
+    "menuClose": {
+      "comment": "File menu item: close the front window (⌘W).",
+      "scope": {
+        "platforms": [
+          "macos"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "關閉",
+        "tailo": "kuan-pì",
+        "poj": "koan-pì",
+        "en": "Close",
+        "ja": "閉じる"
+      }
+    },
+    "menuEdit": {
+      "comment": "Menu-bar Edit menu title.",
+      "scope": {
+        "platforms": [
+          "macos"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "編輯",
+        "tailo": "pian-tsi̍p",
+        "poj": "pian-chi̍p",
+        "en": "Edit",
+        "ja": "編集"
+      }
+    },
+    "menuUndo": {
+      "comment": "Edit menu item (⌘Z).",
+      "scope": {
+        "platforms": [
+          "macos"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "還原",
+        "tailo": "huân-guân",
+        "poj": "hoân-goân",
+        "en": "Undo",
+        "ja": "取り消す"
+      }
+    },
+    "menuRedo": {
+      "comment": "Edit menu item (⇧⌘Z).",
+      "scope": {
+        "platforms": [
+          "macos"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "重做",
+        "tailo": "tîng tsò",
+        "poj": "têng chò",
+        "en": "Redo",
+        "ja": "やり直す"
+      }
+    },
+    "menuCut": {
+      "comment": "Edit menu item (⌘X).",
+      "scope": {
+        "platforms": [
+          "macos"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "剪下",
+        "tailo": "tsián--lo̍h-lâi",
+        "poj": "chián--lo̍h-lâi",
+        "en": "Cut",
+        "ja": "カット"
+      }
+    },
+    "menuCopy": {
+      "comment": "Edit menu item (⌘C).",
+      "scope": {
+        "platforms": [
+          "macos"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "拷貝",
+        "tailo": "khó-puè",
+        "poj": "khó-pòe",
+        "en": "Copy",
+        "ja": "コピー"
+      }
+    },
+    "menuPaste": {
+      "comment": "Edit menu item (⌘V).",
+      "scope": {
+        "platforms": [
+          "macos"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "貼上",
+        "tailo": "tah--siōng-khì",
+        "poj": "tah--siōng-khì",
+        "en": "Paste",
+        "ja": "ペースト"
+      }
+    },
+    "menuSelectAll": {
+      "comment": "Edit menu item (⌘A).",
+      "scope": {
+        "platforms": [
+          "macos"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "全選",
+        "tailo": "tsuân-suán",
+        "poj": "choân-soán",
+        "en": "Select All",
+        "ja": "すべてを選択"
+      }
+    },
+    "dictionarySourcesLink": {
+      "comment": "Settings sidebar row + pane title: the dictionary-source toggles page. iOS lists the toggles inline instead.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "辭典管理",
+        "tailo": "sû-tián kuán-lí",
+        "poj": "sû-tián koán-lí",
+        "en": "Manage Dictionaries",
+        "ja": "辞書の管理"
+      }
+    },
+    "openURLFailed": {
+      "comment": "Alert title when NSWorkspace could not open a dictionary's web page. macOS-only: the iOS opener is fire-and-forget.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "拍袂開網頁",
+        "tailo": "phah bē khui bāng-ia̍h",
+        "poj": "phah bē khui bāng-ia̍h",
+        "en": "Could Not Open the Page",
+        "ja": "ページを開けませんでした"
+      }
+    },
+    "customDictReadFailed": {
+      "comment": "Alert title when the custom-dictionary store could not be read.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "讀袂著自訂詞庫",
+        "tailo": "tha̍k bē tio̍h tsū-tīng-sû-khòo",
+        "poj": "tha̍k bē tio̍h chū-tēng-sû-khò͘",
+        "en": "Could Not Read the Custom Dictionary",
+        "ja": "カスタム辞書を読み込めませんでした"
+      }
+    },
+    "customDictWriteFailed": {
+      "comment": "Alert title when a custom-dictionary write failed.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "寫袂入自訂詞庫",
+        "tailo": "siá bē ji̍p tsū-tīng-sû-khòo",
+        "poj": "siá bē ji̍p chū-tēng-sû-khò͘",
+        "en": "Could Not Save to the Custom Dictionary",
+        "ja": "カスタム辞書に保存できませんでした"
+      }
+    },
+    "settingsWriteFailed": {
+      "comment": "Banner title in the settings window when settings.json could not be written (the control snaps back).",
+      "scope": {
+        "platforms": [
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "設定寫袂入去",
+        "tailo": "siat-tīng siá bē ji̍p--khì",
+        "poj": "siat-tēng siá bē ji̍p--khì",
+        "en": "Could Not Save the Settings",
+        "ja": "設定を保存できませんでした"
+      }
+    },
+    "progressWorking": {
+      "comment": "Label under the spinner while a 詞庫 page runs any blocking job (save, delete, export, import). Desktop-only: the mobile apps have no blocking overlay.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "咧處理…",
+        "tailo": "teh tshú-lí…",
+        "poj": "teh chhú-lí…",
+        "en": "Working…",
+        "ja": "処理中…"
+      }
+    },
+    "importComplete": {
+      "comment": "Alert title after a CSV import finished. iOS titles the alert with the action's own name instead.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "匯入完成",
+        "tailo": "huē-ji̍p uân-sîng",
+        "poj": "hōe-ji̍p oân-sêng",
+        "en": "Import Complete",
+        "ja": "読み込みが完了しました"
+      }
+    },
+    "notUTF8Detail": {
+      "comment": "Alert body when an imported file is not UTF-8 — a different cause from a malformed CSV, which has its own message.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "這个檔案毋是 UTF-8 文字。",
+        "tailo": "tsit ê tóng-àn m̄-sī UTF-8 bûn-jī.",
+        "poj": "chit ê tóng-àn m̄-sī UTF-8 bûn-jī.",
+        "en": "This file is not UTF-8 text.",
+        "ja": "このファイルは UTF-8 テキストではありません。"
+      }
+    },
+    "entriesSection": {
+      "comment": "Section header over the custom-dictionary rows. The shared key is already the page title one line above.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "詞條",
+        "tailo": "sû-tiâu",
+        "poj": "sû-tiâu",
+        "en": "Entries",
+        "ja": "項目"
+      }
+    },
+    "candidateWindowLayout": {
+      "comment": "Picker label in the 一般 pane: which shape the candidate window takes (horizontal row / vertical list / expandable grid).",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "候選窗排列",
+        "tailo": "hāu-suán thang pâi-lia̍t",
+        "poj": "hāu-soán thang pâi-lia̍t",
+        "en": "Candidate Window Layout",
+        "ja": "候補ウィンドウの配置"
+      }
+    },
+    "candidateLayoutHorizontal": {
+      "comment": "Picker value: the horizontal single-row candidate window, paged left to right.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "水平",
+        "tailo": "tsuí-pîng",
+        "poj": "chúi-pêng",
+        "en": "Horizontal",
+        "ja": "水平"
+      }
+    },
+    "candidateLayoutVertical": {
+      "comment": "Picker value: the vertical scrolling-list candidate window.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "徛直",
+        "tailo": "khiā-ti̍t",
+        "poj": "khiā-ti̍t",
+        "en": "Vertical",
+        "ja": "垂直"
+      }
+    },
+    "candidateLayoutExpandable": {
+      "comment": "Picker value: the expandable candidate window — one row that unfolds into a grid via its chevron.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "展開",
+        "tailo": "thián-khui",
+        "poj": "thián-khui",
+        "en": "Expandable",
+        "ja": "展開式"
+      }
+    },
+    "appearanceTab": {
+      "comment": "Settings sidebar row + pane title: the candidate-window appearance pane (light/dark mode, layout, size, font).",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "外觀",
+        "tailo": "guā-kuan",
+        "poj": "gōa-koan",
+        "en": "Appearance",
+        "ja": "外観"
+      }
+    },
+    "candidateAppearanceLight": {
+      "comment": "Caption under the light-mode thumbnail in the 外觀 pane's appearance selector, mirroring System Settings' Appearance row.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "淺色",
+        "tailo": "tshián-sik",
+        "poj": "chhián-sek",
+        "en": "Light",
+        "ja": "ライト"
+      }
+    },
+    "candidateAppearanceDark": {
+      "comment": "Caption under the dark-mode thumbnail in the 外觀 pane's appearance selector, mirroring System Settings' Appearance row.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "深色",
+        "tailo": "tshim-sik",
+        "poj": "chhim-sek",
+        "en": "Dark",
+        "ja": "ダーク"
+      }
+    },
+    "candidateWindowSize": {
+      "comment": "Picker label: how much air the candidate window puts around its text.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "候選窗大細",
+        "tailo": "hāu-suán thang tuā-sè",
+        "poj": "hāu-soán thang tōa-sè",
+        "en": "Candidate Window Size",
+        "ja": "候補ウィンドウの大きさ"
+      }
+    },
+    "sizeSmall": {
+      "comment": "Picker value shared by the candidate window-size and text-size rows: the smallest step.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "細",
+        "tailo": "sè",
+        "poj": "sè",
+        "en": "Small",
+        "ja": "小"
+      }
+    },
+    "sizeMedium": {
+      "comment": "Picker value shared by the candidate window-size and text-size rows: the default step, named Standard (USER 2026-08-21).",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "標準",
+        "tailo": "piau-tsún",
+        "poj": "piau-chún",
+        "en": "Standard",
+        "ja": "標準"
+      }
+    },
+    "sizeLarge": {
+      "comment": "Picker value shared by the candidate window-size and text-size rows: the larger step.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "大",
+        "tailo": "tuā",
+        "poj": "tōa",
+        "en": "Large",
+        "ja": "大"
+      }
+    },
+    "shortcutsTab": {
+      "comment": "Sidebar label for the settings pane holding the shortcut rows.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "快速齒",
+        "tailo": "khuài-sok khí",
+        "poj": "khoài-sok khí",
+        "en": "Shortcuts",
+        "ja": "ショートカット"
+      }
+    },
+    "actionNextCandidate": {
+      "comment": "Shortcut row: move the highlight to the next candidate.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "後一个字",
+        "tailo": "āu tsi̍t ê jī",
+        "poj": "āu chi̍t ê jī",
+        "en": "Next Candidate",
+        "ja": "次の候補"
+      }
+    },
+    "actionPreviousCandidate": {
+      "comment": "Shortcut row: move the highlight to the previous candidate.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "頂一个字",
+        "tailo": "tíng tsi̍t ê jī",
+        "poj": "téng chi̍t ê jī",
+        "en": "Previous Candidate",
+        "ja": "前の候補"
+      }
+    },
+    "actionPageForward": {
+      "comment": "Shortcut row: show the next page of candidates.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "後一頁",
+        "tailo": "āu tsi̍t ia̍h",
+        "poj": "āu chi̍t ia̍h",
+        "en": "Next Page",
+        "ja": "次のページ"
+      }
+    },
+    "actionPageBackward": {
+      "comment": "Shortcut row: show the previous page of candidates.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "頂一頁",
+        "tailo": "tíng tsi̍t ia̍h",
+        "poj": "téng chi̍t ia̍h",
+        "en": "Previous Page",
+        "ja": "前のページ"
+      }
+    },
+    "actionConfirmHighlighted": {
+      "comment": "Shortcut row: commit the highlighted candidate.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "確定齒",
+        "tailo": "khak-tīng khí",
+        "poj": "khak-tēng khí",
+        "en": "Confirm Key",
+        "ja": "確定キー"
+      }
+    },
+    "actionCommitLiteral": {
+      "comment": "Shortcut row: commit the romanization exactly as typed.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "送出原本拍的字",
+        "tailo": "sàng-tshut guân-pún phah ê jī",
+        "poj": "sàng-chhut goân-pún phah ê jī",
+        "en": "Commit What I Typed",
+        "ja": "入力したまま確定"
+      }
+    },
+    "actionCommitAlternateScript": {
+      "comment": "Shortcut row: commit the highlighted candidate in the other script (漢羅).",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "臨時拍羅馬字/漢字",
+        "tailo": "lîm-sî phah lô-má-jī / hàn-jī",
+        "poj": "lîm-sî phah lô-má-jī / hàn-jī",
+        "en": "Type Roman/Hanji Temporarily",
+        "ja": "一時的にローマ字/漢字で入力"
+      }
+    },
+    "shortcutUnbound": {
+      "comment": "Shortcut recorder button when no key is assigned to the row.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "無設定",
+        "tailo": "bô siat-tīng",
+        "poj": "bô siat-tēng",
+        "en": "None",
+        "ja": "未設定"
+      }
+    },
+    "shortcutRecording": {
+      "comment": "Shortcut recorder button while it is waiting for a key press.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "揤一个鍵…",
+        "tailo": "tshi̍h tsi̍t ê kiān…",
+        "poj": "chhi̍h chi̍t ê kiān…",
+        "en": "Press a key…",
+        "ja": "キーを押してください…"
+      }
+    },
+    "shortcutRejectedTaken": {
+      "comment": "Recorder error: the chord cannot be bound because something else already owns it — a romanization key, a key the input method reserves, a candidate-slot chord, a system shortcut, or the host app. One message covers every taken case; the recorder does not name the owner.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "已經予佔用",
+        "tailo": "í-king hōo tsiàm-iōng",
+        "poj": "í-keng hō͘ chiàm-ēng",
+        "en": "That key is already taken",
+        "ja": "そのキーは使用済みです"
+      }
+    },
+    "shortcutRejectedNoKey": {
+      "comment": "Recorder error: the event carried no key that could be recorded.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "揀袂著鍵",
+        "tailo": "kíng bē tio̍h kiān",
+        "poj": "kéng bē tio̍h kiān",
+        "en": "No key to record",
+        "ja": "記録できるキーがありません"
+      }
+    },
+    "copyrightLine": {
+      "comment": "Settings 一般 pane footer: authorship line beside the sponsor link. Same in every language — a personal name carries no translation. The year is a literal, updated by hand at release time.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "© 2026 Bîn-hiân",
+        "tailo": "© 2026 Bîn-hiân",
+        "poj": "© 2026 Bîn-hiân",
+        "en": "© 2026 Bîn-hiân",
+        "ja": "© 2026 Bîn-hiân"
+      }
+    },
+    "sponsorLink": {
+      "comment": "Settings 一般 pane footer: link out to the ECPay donation page. The heart is part of the authored label, so each language owns its own placement.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "贊助支持 ❤️",
+        "tailo": "tsàn-tsōo tsi-tshî ❤️",
+        "poj": "chàn-chō͘ chi-chhî ❤️",
+        "en": "Support this project ❤️",
+        "ja": "支援する ❤️"
+      }
+    },
+    "updateCheckNow": {
+      "comment": "Button in the Settings 一般 pane that checks for an update immediately, next to the installed version, and the input-source menu row that does the same.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "檢查更新",
+        "tailo": "kiám-tsa king-sin",
+        "poj": "kiám-cha keng-sin",
+        "en": "Check for Updates",
+        "ja": "アップデートを確認"
+      }
+    },
+    "menuSettings": {
+      "comment": "Input-source menu row that opens the settings window on the pane the user left it on.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "設定",
+        "tailo": "siat-tīng",
+        "poj": "siat-tēng",
+        "en": "Settings",
+        "ja": "設定"
+      }
+    },
+    "updateCurrentVersionLabel": {
+      "comment": "Settings 一般 pane: the installed version, shown beside the check button. Wording mirrors home.json `version`.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "placeholders": {
+        "version": "string"
+      },
+      "values": {
+        "hanji": "目前版本 {version}",
+        "tailo": "ba̍k-tsîng pán-pún {version}",
+        "poj": "ba̍k-chêng pán-pún {version}",
+        "en": "Current version {version}",
+        "ja": "現在のバージョン {version}"
+      }
+    },
+    "updateAvailableTitle": {
+      "comment": "Update alert: title when the manifest names a newer version than the installed one.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "有新版本",
+        "tailo": "ū sin pán-pún",
+        "poj": "ū sin pán-pún",
+        "en": "Update Available",
+        "ja": "新しいバージョンがあります"
+      }
+    },
+    "updateAvailableMessage": {
+      "comment": "The one sentence announcing a downloadable version, on both surfaces that announce it: the manual-check sheet and the system notification. The installed version is not repeated and the reader is not told to click — a notification is what it is (USER 2026-08-28: 用字精簡清楚即可).",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "placeholders": {
+        "latest": "string"
+      },
+      "values": {
+        "hanji": "台語齒盤 {latest} 會使下載矣。",
+        "tailo": "Tâi-gí khí-puânn {latest} ē-sái hā-tsài--ah.",
+        "poj": "Tâi-gí khí-pôaⁿ {latest} ē-sái hā-chài--ah.",
+        "en": "TaigiKeyboard {latest} is available for download.",
+        "ja": "台語キーボード {latest} がダウンロードできます。"
+      }
+    },
+    "updateDownloadAction": {
+      "comment": "Update alert: default button — opens the download page in the browser.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "去下載",
+        "tailo": "khì hā-tsài",
+        "poj": "khì hā-chài",
+        "en": "Download",
+        "ja": "ダウンロード"
+      }
+    },
+    "updateLaterAction": {
+      "comment": "Update alert: dismisses without recording anything — the next check may notify again.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "暫時毋免",
+        "tailo": "tsiām-sî m̄-bián",
+        "poj": "chiām-sî m̄-bián",
+        "en": "Later",
+        "ja": "後で"
+      }
+    },
+    "updateUpToDateTitle": {
+      "comment": "Manual-check alert: the installed version is already the newest published one.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "已經是上新版本",
+        "tailo": "í-king sī siōng sin pán-pún",
+        "poj": "í-keng sī siōng sin pán-pún",
+        "en": "You're up to date",
+        "ja": "最新バージョンです"
+      }
+    },
+    "updateCheckFailedTitle": {
+      "comment": "Manual-check alert: the check could not complete. Automatic checks fail silently instead.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "無法度檢查更新",
+        "tailo": "bô-huat-tōo kiám-tsa king-sin",
+        "poj": "bô-hoat-tō͘ kiám-cha keng-sin",
+        "en": "Could Not Check for Updates",
+        "ja": "アップデートを確認できませんでした"
+      }
+    },
+    "updateCheckFailedMessage": {
+      "comment": "Manual-check alert: generic recovery line — no error taxonomy, the user's only remedy is the network and retrying.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "請檢查網路了後才閣試。",
+        "tailo": "tshiánn kiám-tsa bāng-lōo liáu-āu tsiah koh tshì.",
+        "poj": "chhiáⁿ kiám-cha bāng-lō͘ liáu-āu chiah koh chhì.",
+        "en": "Check your network connection and try again.",
+        "ja": "ネットワーク接続を確認してから、もう一度お試しください。"
+      }
+    },
+    "updateNotifyOfferTitle": {
+      "comment": "Title of the one-time offer, shown the first time the settings window opens: may we notify about new versions?",
+      "scope": {
+        "platforms": [
+          "macos"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "有新版本的時陣通知你?",
+        "tailo": "Ū sin pán-pún ê sî-tsūn thong-ti lí?",
+        "poj": "Ū sin pán-pún ê sî-chūn thong-ti lí?",
+        "en": "Get notified about new versions?",
+        "ja": "新しいバージョンをお知らせしますか？"
+      }
+    },
+    "updateNotifyOfferEnable": {
+      "comment": "Default button of the one-time notification offer; accepting it is what triggers the system permission prompt.",
+      "scope": {
+        "platforms": [
+          "macos"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "開啟通知",
+        "tailo": "khai-khé thong-ti",
+        "poj": "khai-khé thong-ti",
+        "en": "Enable Notifications",
+        "ja": "通知をオンにする"
+      }
+    },
+    "updatePendingVersionLabel": {
+      "comment": "Settings 一般 pane row shown while a newer version is known but not installed. The surface that stays accurate with no network and after a missed notification.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "placeholders": {
+        "version": "string"
+      },
+      "values": {
+        "hanji": "有新版本 {version}",
+        "tailo": "ū sin pán-pún {version}",
+        "poj": "ū sin pán-pún {version}",
+        "en": "Version {version} is available",
+        "ja": "バージョン {version} があります"
+      }
+    },
+    "updateNotificationsOffNote": {
+      "comment": "Settings 一般 pane row shown when notifications are refused. Says what turning them on gets you rather than what is currently lost (USER 2026-08-24: 「改為比較正面」), and leads out to where it is changed. The key name still describes when the row appears, not what it says.",
+      "scope": {
+        "platforms": [
+          "macos"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "系統通知拍開，才會收著更新通知",
+        "tailo": "Hē-thóng thong-ti phah-khui, tsiah ē siu--tio̍h king-sin thong-ti",
+        "poj": "Hē-thóng thong-ti phah-khui, chiah ē siu--tio̍h keng-sin thong-ti",
+        "en": "Turn on system notifications to receive update notices",
+        "ja": "システム通知をオンにすると、アップデートのお知らせを受け取れます"
+      }
+    },
+    "updateOpenNotificationSettings": {
+      "comment": "Settings 一般 pane link out to the System Settings notifications pane, beside the notifications-off note.",
+      "scope": {
+        "platforms": [
+          "macos"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "去系統設定",
+        "tailo": "khì hē-thóng siat-tīng",
+        "poj": "khì hē-thóng siat-tēng",
+        "en": "Open System Settings",
+        "ja": "システム設定を開く"
+      }
+    },
+    "updateDownloadAndInstallAction": {
+      "comment": "Settings 一般 pane: fetches the update package in the app, replacing the trip to the download page. Shown only when the manifest names a package and this build can pin its signer.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "下載安裝",
+        "tailo": "hā-tsài an-tsong",
+        "poj": "hā-chài an-chong",
+        "en": "Download and Install",
+        "ja": "ダウンロードしてインストール"
+      }
+    },
+    "updateInstallAction": {
+      "comment": "Settings 一般 pane: opens the downloaded package in Installer.app. The user's second press — arrival never launches anything by itself.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "安裝",
+        "tailo": "an-tsong",
+        "poj": "an-chong",
+        "en": "Install",
+        "ja": "インストール"
+      }
+    },
+    "updateRetryAction": {
+      "comment": "Settings 一般 pane: tries a failed update download again.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "閣試一擺",
+        "tailo": "koh tshì tsi̍t pái",
+        "poj": "koh chhì chi̍t pái",
+        "en": "Try Again",
+        "ja": "もう一度"
+      }
+    },
+    "updateInstallFailedNote": {
+      "comment": "Settings 一般 pane: the update could not be installed — download, package verification, or launching the installer failed. Retryable; the retry button says what to do, and updateCheckFailedMessage already carries the network advice.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "安裝失敗",
+        "tailo": "an-tsong sit-pāi",
+        "poj": "an-chong sit-pāi",
+        "en": "The update could not be installed",
+        "ja": "アップデートをインストールできませんでした"
+      }
+    },
+    "clearLearningRecords": {
+      "comment": "Destructive row in the 詞庫 pane: deletes the frequency AND association records in one go. Acts on click, with no confirmation (USER 2026-08-25). macOS has no per-record management UI, so this is the only way to discard what the keyboard learned.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "刪除學習紀錄",
+        "tailo": "san-tû ha̍k-si̍p kì-lio̍k",
+        "poj": "san-tû ha̍k-si̍p kì-lio̍k",
+        "en": "Delete Learning Records",
+        "ja": "学習記録を削除"
+      }
+    },
+    "clearLearningRecordsDone": {
+      "comment": "Alert title after the 刪除學習紀錄 row finishes.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "學習紀錄清掉矣",
+        "tailo": "ha̍k-si̍p kì-lio̍k tshing-tiāu ah",
+        "poj": "ha̍k-si̍p kì-lio̍k chheng-tiāu ah",
+        "en": "Learning Records Cleared",
+        "ja": "学習記録を消去しました"
+      }
+    },
+    "clearLearningRecordsFailed": {
+      "comment": "Alert title when 刪除學習紀錄 could not empty a table. The store's own diagnostic follows as the body.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "學習紀錄清袂掉",
+        "tailo": "ha̍k-si̍p kì-lio̍k tshing bē tiāu",
+        "poj": "ha̍k-si̍p kì-lio̍k chheng bē tiāu",
+        "en": "Could Not Clear Learning Records",
+        "ja": "学習記録を消去できませんでした"
+      }
+    },
+    "installerDllLocked": {
+      "comment": "Windows installer (Inno Setup): the install stops because a running application still holds TaigiKeyboard.dll; the one recipe that frees it. No macOS counterpart (a .pkg replaces the bundle in place).",
+      "scope": {
+        "platforms": [
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "台語齒盤猶閣予執行中的程式咧用，檔案無法度換掉。\n\n請先換做別个輸入法，登出 Windows 閣再登入，然後閣執行一擺這个安裝程式。免重新開機。",
+        "tailo": "Tâi-gí khí-puânn iáu-koh hōo tsip-hîng-tiong ê thîng-sik teh iōng, tóng-àn bô-huat-tōo uānn-tiāu.\n\nTshiánn sing uānn-tsò pa̍t ê su-ji̍p-huat, ting-tshut Windows koh-tsài ting-ji̍p, jiân-āu koh tsip-hîng tsi̍t pái tsit ê an-tsong thîng-sik. Bián tîng-sin khui-ki.",
+        "poj": "Tâi-gí khí-pôaⁿ iáu-koh hō͘ chip-hêng-tiong ê thêng-sek teh iōng, tóng-àn bô-hoat-tō͘ ōaⁿ-tiāu.\n\nChhiáⁿ seng ōaⁿ-chò pa̍t ê su-ji̍p-hoat, teng-chhut Windows koh-chài teng-ji̍p, jiân-āu koh chip-hêng chi̍t pái chit ê an-chong thêng-sek. Bián têng-sin khui-ki.",
+        "en": "TaigiKeyboard is still in use by a running application, so its files cannot be replaced.\n\nSwitch to another input method, sign out of Windows, sign in again, and run this installer once more. No restart is needed.",
+        "ja": "TaigiKeyboard は実行中のアプリケーションに使用されているため、ファイルを置き換えられません。\n\n別の入力方式に切り替えてから Windows からサインアウトし、再度サインインしてこのインストーラーを実行してください。再起動は不要です。"
+      }
+    },
+    "installerStepFailed": {
+      "comment": "Windows installer: a registration or scheduled-task step failed after the files were copied; the previous version was restored. {step} names the failed command.",
+      "scope": {
+        "platforms": [
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "placeholders": {
+        "step": "string"
+      },
+      "values": {
+        "hanji": "安裝程式無法度完成這个步驟：{step}\n\n若有舊版，已經復原矣。詳細請看安裝紀錄。",
+        "tailo": "An-tsong thîng-sik bô-huat-tōo uân-sîng tsit ê pōo-tsàu: {step}\n\nNā ū kū-pán, í-king ho̍k-guân--ah. Siông-sè tshiánn khuànn an-tsong kì-lo̍k.",
+        "poj": "An-chong thêng-sek bô-hoat-tō͘ oân-sêng chit ê pō͘-chàu: {step}\n\nNā ū kū-pán, í-keng ho̍k-goân--ah. Siông-sè chhiáⁿ khòaⁿ an-chong kì-lo̍k.",
+        "en": "Setup could not complete this step: {step}\n\nThe previous version, if any, was put back. Details are in the setup log.",
+        "ja": "次の手順を完了できませんでした: {step}\n\n以前のバージョンがあれば元に戻しました。詳細はセットアップのログを参照してください。"
+      }
+    },
+    "installerSignOutNote": {
+      "comment": "Windows installer: the line added to the finished page — a new text service can need a sign-out before Windows lists it.",
+      "scope": {
+        "platforms": [
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "若是輸入法清單內底無看著台語齒盤，請登出 Windows 閣再登入。",
+        "tailo": "Nā-sī su-ji̍p-huat tshing-tuann lāi-té bô khuànn-tio̍h Tâi-gí khí-puânn, tshiánn ting-tshut Windows koh-tsài ting-ji̍p.",
+        "poj": "Nā-sī su-ji̍p-hoat chheng-toaⁿ lāi-té bô khòaⁿ-tio̍h Tâi-gí khí-pôaⁿ, chhiáⁿ teng-chhut Windows koh-chài teng-ji̍p.",
+        "en": "If TaigiKeyboard does not appear in the input-method list, sign out of Windows and sign in again.",
+        "ja": "入力方式の一覧に TaigiKeyboard が表示されない場合は、Windows からサインアウトして再度サインインしてください。"
+      }
+    },
+    "installerUpdateTaskSkippedNote": {
+      "comment": "Windows installer: the line added to the finished page when the daily update-check task could not be created. The install itself succeeded; only the background check is missing.",
+      "scope": {
+        "platforms": [
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "無法度設定自動檢查更新。請佇設定內底檢查更新。",
+        "tailo": "Bô-huat-tōo siat-tīng tsū-tōng kiám-tsa king-sin. Tshiánn tī siat-tīng lāi-té kiám-tsa king-sin.",
+        "poj": "Bô-hoat-tō͘ siat-tēng chū-tōng kiám-cha keng-sin. Chhiáⁿ tī siat-tēng lāi-té kiám-cha keng-sin.",
+        "en": "Automatic update checks could not be set up. You can check for updates in the settings window.",
+        "ja": "更新の自動確認を設定できませんでした。設定ウィンドウから更新を確認できます。"
+      }
+    },
+    "customFontAdd": {
+      "comment": "Appearance pane button that opens a file panel to take a font file into the user's typeface library.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "加入字型",
+        "tailo": "ka-ji̍p jī-hîng",
+        "poj": "ka-ji̍p jī-hêng",
+        "en": "Add a Typeface…",
+        "ja": "フォントを追加…"
+      }
+    },
+    "customFontMissing": {
+      "comment": "Appearance pane note shown when the selected custom typeface's file is gone or will not activate; the candidate window falls back to the system font and the preference is kept.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "揣無字型，先用系統字型",
+        "tailo": "tshuē-bô jī-hîng, sian iōng hē-thóng jī-hîng",
+        "poj": "chhōe-bô jī-hêng, sian iōng hē-thóng jī-hêng",
+        "en": "The selected typeface is missing — using the system font",
+        "ja": "選択したフォントが見つかりません。システムフォントを使用します"
+      }
+    },
+    "customFontRemoveFailed": {
+      "comment": "Appearance pane failure title when a custom typeface could not be removed, which is what macOS reports while something still holds the font.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "刪除失敗",
+        "tailo": "san-tû sit-pāi",
+        "poj": "san-tû sit-pāi",
+        "en": "Could not delete",
+        "ja": "削除できませんでした"
+      }
+    },
+    "fontManagementTab": {
+      "comment": "Settings sidebar row + pane title: the pane where the candidate window's typeface is chosen and the user's own typefaces are added and removed.",
+      "scope": {
+        "platforms": [
+          "macos",
+          "windows"
+        ],
+        "surfaces": [
+          "host"
+        ]
+      },
+      "values": {
+        "hanji": "字型管理",
+        "tailo": "jī-hîng kuán-lí",
+        "poj": "jī-hêng koán-lí",
+        "en": "Manage Typefaces",
+        "ja": "フォント管理"
+      }
+    }
+  }
+}

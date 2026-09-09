@@ -1,0 +1,948 @@
+//! Pure transition function: `(state, intent, config) → ComposingResponse`.
+//! Pure — no logging, no FFI, no platform types. The dispatcher in
+//! `dispatch.rs` runs this and returns the response to callers.
+//!
+//! Effect ordering matters; iOS/Android downstream wrappers consume effects
+//! in proto-list order. `prost` preserves order on `repeated Effect` fields.
+//!
+//! `Phase::Continuous` (v3.5.8) follows **Model B** (mainstream-aligned —
+//! librime / khiin-rs / MOE / azooKey; see
+//! `docs/engine/continuous-input-ranking.md` §10): nailed segments are **NOT**
+//! in the host document. The whole composition — `Σ nailed[i].display_text`
+//! followed by the derived display of the pending `raw` tail — occupies a
+//! single marked / preedit region until a hard finalize (Enter / final-commit
+//! / external-suggestion commit), which writes the whole composition to the
+//! document in one `CommitTextReplacingPreedit`. A candidate tap *nails* a
+//! segment inside the composition (no document write). `ComposingResponse.
+//! preedit` therefore carries the **whole composition** during Continuous;
+//! tests inspect `nailed` via `Engine::snapshot_state`.
+
+use crate::api::{combined_display, nailed_prefix, EngineState, Intent, NailedSegment, Phase};
+use crate::derived::{derived_display, strip_tps_separator_markers};
+use protos::engine::composing_response::Preedit;
+use protos::engine::effect;
+use protos::engine::AppConfig;
+use protos::engine::{
+    ClearPreeditWithoutCommit, CommitTextReplacingPreedit, ComposingResponse,
+    DeleteBackwardFromDocument, Effect, NextWordClearForNewComposing,
+    NextWordUpdateLastSelectedWord, NextWordWordSelected, PerformAutocomplete, ResetAutocomplete,
+    ResetAutocompleteContext, UpdatePreedit,
+};
+
+/// Apply `intent` against `state`, mutate, return the proto response.
+pub(crate) fn apply(
+    state: &mut EngineState,
+    intent: Intent,
+    config: &AppConfig,
+) -> ComposingResponse {
+    match intent {
+        Intent::Start { text } => match &state.phase {
+            Phase::Continuous { .. } => start_under_continuous(state, text, config),
+            // §21: a leading `--` 輕聲 marker typed from Idle is a document
+            // literal, not composing input (see helper). Composing-phase Start
+            // (non-production) keeps the plain enter-composing behavior.
+            Phase::Idle => enter_composing_or_insert_leading_hyphens(state, text, config),
+            Phase::Composing { .. } => enter_composing(state, text, config),
+        },
+        Intent::Append { ch } => match &state.phase {
+            Phase::Idle => enter_composing_or_insert_leading_hyphens(state, ch, config),
+            Phase::Composing { raw } => {
+                let mut next = raw.clone();
+                next.push_str(&ch);
+                enter_composing(state, next, config)
+            }
+            Phase::Continuous { .. } => append_continuous(state, ch, config),
+        },
+        Intent::AppendHyphen => apply(
+            state,
+            Intent::Append {
+                ch: "-".to_string(),
+            },
+            config,
+        ),
+        Intent::ReplaceLast { replacement } => replace_last(state, replacement, config),
+        Intent::DeleteBackward => delete_backward(state, config),
+        Intent::CommitDerived => match &state.phase {
+            Phase::Continuous { .. } => noop(state, config),
+            _ => commit_derived(state, config),
+        },
+        Intent::CommitRaw => commit_raw(state, config),
+        Intent::SelectSuggestion { text } => match &state.phase {
+            Phase::Continuous { .. } => select_suggestion_under_continuous(state, text, config),
+            _ => select_suggestion(state, text, config),
+        },
+        Intent::CommitPreeditThenInsertExternal { text } => match &state.phase {
+            Phase::Continuous { .. } => {
+                commit_preedit_then_insert_external_under_continuous(state, text, config)
+            }
+            _ => commit_preedit_then_insert_external(state, text, config),
+        },
+        Intent::Reset => reset(state, config),
+        Intent::SetSelectedCandidateIndex { index } => {
+            set_selected_candidate_index(state, index, config)
+        }
+        Intent::QueryState => snapshot(state, config),
+        Intent::EnterContinuous => enter_continuous(state, config),
+        // FetchAtPos is a read-only query that needs lexicon state; the
+        // dispatcher short-circuits before reaching `apply`. Reaching
+        // here means a caller bypassed dispatch (test path or future
+        // refactor) — return a snapshot rather than panic so the
+        // invariant "transition is total" holds (Codex post-impl
+        // continuous_phase findings #2/#3 pattern).
+        Intent::FetchAtPos { .. } => snapshot(state, config),
+        Intent::CommitContinuous {
+            display_text,
+            canonical_text,
+            association_tl,
+            consumed_bytes,
+            syllable_count,
+        } => commit_continuous(
+            state,
+            display_text,
+            canonical_text,
+            association_tl,
+            consumed_bytes,
+            syllable_count,
+            config,
+        ),
+        Intent::ResetContinuous => reset_continuous(state, config),
+        Intent::TelexKey { key } => telex_key(state, &key, config),
+    }
+}
+
+/// `Intent::TelexKey` — edit the pending tail through
+/// `telex::apply_telex_key`; a `None` edit is a no-op. Under Continuous the
+/// nailed segments stay untouched and the preedit re-renders the whole
+/// composition; selection resets as a fresh typing step does.
+fn telex_key(state: &mut EngineState, key: &str, config: &AppConfig) -> ComposingResponse {
+    let mode = phonetics::api::parse_input_mode(&config.input_mode);
+    match &state.phase {
+        Phase::Idle => match crate::telex::apply_telex_key("", key, mode) {
+            Some(text) => enter_composing(state, text, config),
+            None => noop(state, config),
+        },
+        Phase::Composing { raw } => match crate::telex::apply_telex_key(raw, key, mode) {
+            Some(next) => enter_composing(state, next, config),
+            None => noop(state, config),
+        },
+        Phase::Continuous { raw, nailed } => match crate::telex::apply_telex_key(raw, key, mode) {
+            Some(next) => {
+                let combined = combined_display(nailed, &next, config);
+                state.phase = Phase::Continuous {
+                    raw: next.clone(),
+                    nailed: nailed.clone(),
+                };
+                state.selected_candidate_index = 0;
+                step_response(next, combined, 0)
+            }
+            None => noop(state, config),
+        },
+    }
+}
+
+// ---- Helpers ------------------------------------------------------
+
+/// Drop the last `char` from `s` in a single UTF-8 walk via `Chars::as_str`.
+/// Returns "" if `s` is empty.
+fn drop_last_char(s: &str) -> String {
+    let mut it = s.chars();
+    it.next_back();
+    it.as_str().to_string()
+}
+
+/// Build a mid-composition step response (typing / replace-last /
+/// delete-backward non-empty branches, in both `Phase::Composing` and
+/// `Phase::Continuous`): update the preedit + request a fresh autocomplete
+/// query against the new buffer. Under Continuous, `display` is the **whole
+/// composition** (`Σ nailed.display_text` + pending-tail derived form —
+/// callers build it via [`combined_display`], Model B) while `raw` stays the
+/// still-editable pending tail.
+fn step_response(raw: String, display: String, selected_index: i32) -> ComposingResponse {
+    ComposingResponse {
+        preedit: Some(Preedit {
+            raw_input: raw,
+            display_text: display.clone(),
+        }),
+        effect: vec![update_preedit(display), perform_autocomplete()],
+        selected_candidate_index: selected_index,
+        is_composing: true,
+        continuous: None,
+    }
+}
+
+/// Enter or update the composing phase. A fresh composition step resets
+/// `selected_candidate_index` to 0.
+fn enter_composing(state: &mut EngineState, raw: String, config: &AppConfig) -> ComposingResponse {
+    state.phase = Phase::Composing { raw: raw.clone() };
+    state.selected_candidate_index = 0;
+    let display = derived_display(&raw, config);
+    step_response(raw, display, 0)
+}
+
+/// §21 INVARIANT_KHINSIANN_LEADING_MARKER_LITERAL — a leading ASCII-hyphen run
+/// typed from `Phase::Idle` (no syllable content yet) is the 輕聲 (neutral-tone)
+/// marker `--` (e.g. `--ah` 矣). It is a **document literal**, not composing
+/// input: insert the run verbatim and — if a syllable remainder follows in the
+/// same text — enter composing with the remainder. The underlined preedit then
+/// covers only the convertible syllable, matching the candidate strip and the
+/// reference IME (MOE).
+///
+/// Internal hyphens (typed AFTER syllable content, e.g. the 連字 in `tai-bak`)
+/// never reach this fn — the buffer is already `Phase::Composing`, so they stay
+/// composing-boundary delimiters via the `Append`/`Composing` arm.
+///
+/// Production keystrokes arrive one char at a time, so the common case is
+/// `text == "-"` (remainder empty → pure literal insert, stay Idle). The
+/// split also covers a multi-char `Start { text: "--ah" }` from the engine API
+/// / tests so no old-model entry survives.
+fn enter_composing_or_insert_leading_hyphens(
+    state: &mut EngineState,
+    text: String,
+    config: &AppConfig,
+) -> ComposingResponse {
+    let hyphen_len = text.bytes().take_while(|&b| b == b'-').count();
+    if hyphen_len == 0 {
+        return enter_composing(state, text, config);
+    }
+    let (run, remainder) = text.split_at(hyphen_len);
+    if remainder.is_empty() {
+        // All hyphens — insert the literal run, stay Idle (no preedit).
+        return exit_to_idle(state, vec![commit_text_replacing_preedit(run.to_string())]);
+    }
+    // Leading run + syllable remainder (multi-char `Start` / engine-API /
+    // test path ONLY — the platform sends one char per keystroke, so a
+    // production leading `-` always arrives as `Start{"-"}` with an empty
+    // remainder above). Insert the literal run first, then compose the
+    // remainder. This emits a mixed commit+composing transition; callers MUST
+    // feed leading-hyphen input char-by-char, not as one multi-char `Start`:
+    // a mixed transition can desync Android's `onUpdateSelection` clear-hook
+    // (commit fires before the preedit lands). Engine/proto level is correct
+    // and tested; the contract is char-by-char at the platform boundary.
+    let mut resp = enter_composing(state, remainder.to_string(), config);
+    resp.effect
+        .insert(0, commit_text_replacing_preedit(run.to_string()));
+    resp
+}
+
+/// TPS auto-correct. Preserves `selected_candidate_index` (correction on top
+/// of an in-progress selection). Under `Phase::Continuous` it edits the
+/// pending tail only — nailed segments are untouched — but the preedit
+/// re-renders the whole composition (Model B).
+fn replace_last(
+    state: &mut EngineState,
+    replacement: String,
+    config: &AppConfig,
+) -> ComposingResponse {
+    match &state.phase {
+        Phase::Composing { raw } => {
+            if raw.is_empty() {
+                return noop(state, config);
+            }
+            let mut new_raw = drop_last_char(raw);
+            new_raw.push_str(&replacement);
+            state.phase = Phase::Composing {
+                raw: new_raw.clone(),
+            };
+            let display = derived_display(&new_raw, config);
+            step_response(new_raw, display, state.selected_candidate_index)
+        }
+        Phase::Continuous { raw, nailed } => {
+            if raw.is_empty() {
+                return noop(state, config);
+            }
+            let mut new_pending = drop_last_char(raw);
+            new_pending.push_str(&replacement);
+            // Empty pending + empty nailed = degenerate Continuous state
+            // (Codex post-impl finding #2). Exit to Idle and clear nextword.
+            if new_pending.is_empty() && nailed.is_empty() {
+                return exit_to_idle(state, abort_continuous_effects());
+            }
+            let combined = combined_display(nailed, &new_pending, config);
+            let preserved_index = state.selected_candidate_index;
+            state.phase = Phase::Continuous {
+                raw: new_pending.clone(),
+                nailed: nailed.clone(),
+            };
+            step_response(new_pending, combined, preserved_index)
+        }
+        Phase::Idle => noop(state, config),
+    }
+}
+
+fn delete_backward(state: &mut EngineState, config: &AppConfig) -> ComposingResponse {
+    match &state.phase {
+        Phase::Composing { raw } => {
+            if raw.is_empty() {
+                return noop(state, config);
+            }
+            let new_raw = drop_last_char(raw);
+            if new_raw.is_empty() {
+                return exit_to_idle(
+                    state,
+                    vec![
+                        clear_preedit_without_commit(),
+                        reset_autocomplete(),
+                        delete_backward_from_document(),
+                    ],
+                );
+            }
+            state.phase = Phase::Composing {
+                raw: new_raw.clone(),
+            };
+            state.selected_candidate_index = 0;
+            let display = derived_display(&new_raw, config);
+            step_response(new_raw, display, 0)
+        }
+        Phase::Continuous { raw, nailed } => {
+            delete_backward_continuous(state, raw.clone(), nailed.clone(), config)
+        }
+        Phase::Idle => noop(state, config),
+    }
+}
+
+/// `DeleteBackward` under `Phase::Continuous` — **Model B** (Codex risk (v)).
+/// Nailed segments are **not** in the document, so backspace never emits
+/// `DeleteBackwardFromDocument`: it only re-shapes the single marked region.
+/// Three branches:
+///   1. pending non-empty → drop last char of pending; if pending now empty
+///      AND nailed is also empty, exit to Idle and clear the marked region
+///      (no document char is touched — the char only ever lived in the
+///      marked region); else stay Continuous and re-render the combined
+///      composition.
+///   2. pending empty AND nailed non-empty → **unnail** the last segment:
+///      pop it, restore its `raw_text` as the new pending tail, roll back
+///      NextWord's last-selected, and re-render the combined composition.
+///      Authority is `raw_text` (never display-character count — swap / TPS
+///      / both-scripts display can desync from raw).
+///   3. pending empty AND nailed empty → exit to Idle (degenerate case;
+///      shouldn't occur in steady state but guarded).
+fn delete_backward_continuous(
+    state: &mut EngineState,
+    pending: String,
+    nailed: Vec<NailedSegment>,
+    config: &AppConfig,
+) -> ComposingResponse {
+    if !pending.is_empty() {
+        let new_pending = drop_last_char(&pending);
+        if new_pending.is_empty() && nailed.is_empty() {
+            return exit_to_idle(state, abort_continuous_effects());
+        }
+        let combined = combined_display(&nailed, &new_pending, config);
+        state.phase = Phase::Continuous {
+            raw: new_pending.clone(),
+            nailed,
+        };
+        state.selected_candidate_index = 0;
+        return step_response(new_pending, combined, 0);
+    }
+
+    // pending empty branches
+    if nailed.is_empty() {
+        return exit_to_idle(state, abort_continuous_effects());
+    }
+
+    let mut new_nailed = nailed;
+    // JUSTIFICATION: `nailed.is_empty()` was checked at the branch above;
+    // popping a non-empty Vec is a programmer-invariant guarantee, not a
+    // data path.
+    let popped = new_nailed.pop().expect("nailed non-empty checked above");
+    // Model B: the popped segment was never in the document — unnailing it
+    // just restores its raw text as the editable pending tail. No
+    // `DeleteBackwardFromDocument`; the combined preedit re-render replaces
+    // the marked region. Authority is `raw_text`, never a display-char
+    // count (swap / TPS / both-scripts display can desync from raw).
+    let new_pending = popped.raw_text;
+    // Codex post-impl finding #1: roll the popped segment back out of
+    // nextword's `last_selected_word` so the next final commit can't record
+    // a false association from a word no longer being committed.
+    // v3.5.8 Phase 9 Bug 1 (Option A): NextWord last-selected correction must
+    // use the canonical key, not the (possibly swap-formatted) display
+    // string — keeps association learning mode-independent (decision b).
+    let nextword_correction = match new_nailed.last() {
+        Some(prev) => next_word_update_last_selected_word(
+            prev.canonical_text.clone(),
+            // R2: re-establish the prior segment's context with its
+            // canonical TL (raw-slice fallback), mirroring the commit path.
+            association_roman(&prev.association_tl, &prev.raw_text),
+        ),
+        None => next_word_clear_for_new_composing(),
+    };
+    let combined = combined_display(&new_nailed, &new_pending, config);
+    state.phase = Phase::Continuous {
+        raw: new_pending.clone(),
+        nailed: new_nailed,
+    };
+    state.selected_candidate_index = 0;
+
+    ComposingResponse {
+        preedit: Some(Preedit {
+            raw_input: new_pending,
+            display_text: combined.clone(),
+        }),
+        effect: vec![
+            nextword_correction,
+            update_preedit(combined),
+            perform_autocomplete(),
+        ],
+        selected_candidate_index: 0,
+        is_composing: true,
+        continuous: None,
+    }
+}
+
+fn commit_derived(state: &mut EngineState, config: &AppConfig) -> ComposingResponse {
+    let Phase::Composing { raw } = &state.phase else {
+        return noop(state, config);
+    };
+    let display = derived_display(raw, config);
+    if display.is_empty() {
+        return noop(state, config);
+    }
+    exit_to_idle(state, finalize_effects(display))
+}
+
+fn commit_raw(state: &mut EngineState, config: &AppConfig) -> ComposingResponse {
+    match &state.phase {
+        Phase::Composing { raw } => commit_raw_composing(state, raw.clone(), config),
+        Phase::Continuous { raw, nailed } => {
+            commit_raw_continuous(state, raw.clone(), nailed.clone(), config)
+        }
+        Phase::Idle => noop(state, config),
+    }
+}
+
+fn commit_raw_composing(
+    state: &mut EngineState,
+    raw: String,
+    config: &AppConfig,
+) -> ComposingResponse {
+    if raw.is_empty() {
+        return noop(state, config);
+    }
+    // §41 — commit the marker-free literal, not the raw buffer. A TPS
+    // buffer's ASCII space is the tone-1 / boundary marker (§31); it lives in
+    // `raw` so the barrier machinery and the tone pin can read it, and must
+    // not reach the document. The Continuous arm below already commits
+    // `combined_display`; this arm has to agree, or the engine's contract
+    // would hold only for the phase the platforms happen to be in (both
+    // promote to Continuous after every mutation, but the engine cannot
+    // depend on that — Codex post-impl BLOCK 2026-08-21).
+    exit_to_idle(state, finalize_effects(strip_tps_separator_markers(&raw)))
+}
+
+/// `Intent::CommitRaw` under `Phase::Continuous` (Enter) — v3.5.8 Phase 9
+/// Item 3, **Model B (§10)**. Enter commits the **whole composition** —
+/// `Σ nailed[i].display_text` + the derived display of the pending `raw`
+/// tail — in one `CommitTextReplacingPreedit`, because under Model B the
+/// nailed segments were never written to the document (they lived in the
+/// marked region). This replaces the single marked region with the literal
+/// finalized string. The per-nailed-segment NextWord associations already
+/// fired as `NextWordUpdateLastSelectedWord` at nail time; this emits the
+/// **single terminal** `NextWordWordSelected` for the last "word": the
+/// pending tail when one exists, else the last nailed segment.
+///
+/// See `docs/engine/continuous-input-ranking.md` §10.3 commit contract
+/// (Enter commits the whole composition) and §10.7 "Enter after segments
+/// already nailed" row.
+fn commit_raw_continuous(
+    state: &mut EngineState,
+    raw: String,
+    nailed: Vec<NailedSegment>,
+    config: &AppConfig,
+) -> ComposingResponse {
+    let combined = combined_display(&nailed, &raw, config);
+    // Defensive guard: empty composition (no nailed, empty raw) violates the
+    // "Continuous is non-empty in at least one of pending / nailed"
+    // invariant and is unreachable under normal flow. noop, don't panic.
+    if combined.is_empty() {
+        return noop(state, config);
+    }
+    // Single terminal NextWord word-selection for the last "word": the
+    // pending tail when it exists (roman word, key = its derived form), else
+    // the last nailed segment (canonical key — keeps association learning
+    // mode-independent, v3.5.8 Phase 9 Bug 1 Option A / decision b). Earlier
+    // nailed segments already fired UpdateLastSelectedWord at nail time;
+    // they are NOT replayed here (Codex risk (i) — no double-count).
+    let terminal_nextword = if !raw.is_empty() {
+        // §41 — both fields drop the separator marker. `text` goes through
+        // `derived_display`; `roman` is the raw tail, which for TPS still
+        // carries the marker, and that string becomes the association's
+        // romanization key on both platforms. Learning `ㄍㄠ␣ㄉㄞ` where the
+        // committed word is `ㄍㄠㄉㄞ` would key the row on a form no later
+        // lookup reconstructs (Codex post-impl BLOCK 2026-08-21).
+        let tail_display = derived_display(&raw, config);
+        let tail_roman = strip_tps_separator_markers(&raw);
+        next_word_word_selected(tail_display, tail_roman, true)
+    } else {
+        // raw empty → all input is nailed; the last nailed segment is the
+        // final word. `nailed` is non-empty here (combined non-empty with
+        // empty raw implies a nailed segment exists).
+        match nailed.last() {
+            Some(last) => next_word_word_selected(
+                last.canonical_text.clone(),
+                // R2: this segment had a candidate selected at nail time →
+                // use its canonical TL (raw-slice fallback). The pending-tail
+                // branch above stays raw — there is no candidate there.
+                association_roman(&last.association_tl, &last.raw_text),
+                true,
+            ),
+            None => next_word_clear_for_new_composing(),
+        }
+    };
+    let mut effects = finalize_effects(combined);
+    effects.push(terminal_nextword);
+    exit_to_idle(state, effects)
+}
+
+fn select_suggestion(
+    state: &mut EngineState,
+    text: String,
+    config: &AppConfig,
+) -> ComposingResponse {
+    if !matches!(state.phase, Phase::Composing { .. }) {
+        return noop(state, config);
+    }
+    exit_to_idle(state, finalize_effects(text))
+}
+
+fn commit_preedit_then_insert_external(
+    state: &mut EngineState,
+    external: String,
+    config: &AppConfig,
+) -> ComposingResponse {
+    if external.is_empty() {
+        return noop(state, config);
+    }
+    if let Phase::Composing { raw } = &state.phase {
+        let mut combined = derived_display(raw, config);
+        combined.push_str(&external);
+        return exit_to_idle(state, finalize_effects(combined));
+    }
+    // Idle → plain insert. `CommitTextReplacingPreedit` is no-op-on-empty-preedit
+    // safe on both platforms.
+    exit_to_idle(state, vec![commit_text_replacing_preedit(external)])
+}
+
+/// User-initiated reset. `Phase::Continuous` adds `NextWordClearForNewComposing`
+/// to the standard Composing reset effect pair so the platform tears down
+/// nextword's continuous-mode candidate strip.
+fn reset(state: &mut EngineState, config: &AppConfig) -> ComposingResponse {
+    match state.phase {
+        Phase::Idle => noop(state, config),
+        Phase::Composing { .. } => exit_to_idle(
+            state,
+            vec![clear_preedit_without_commit(), reset_autocomplete()],
+        ),
+        Phase::Continuous { .. } => exit_to_idle(state, abort_continuous_effects()),
+    }
+}
+
+fn set_selected_candidate_index(
+    state: &mut EngineState,
+    index: i32,
+    config: &AppConfig,
+) -> ComposingResponse {
+    state.selected_candidate_index = index;
+    snapshot(state, config)
+}
+
+fn snapshot(state: &EngineState, config: &AppConfig) -> ComposingResponse {
+    let (raw, display, is_composing) = match &state.phase {
+        Phase::Idle => (String::new(), String::new(), false),
+        Phase::Composing { raw } => (raw.clone(), derived_display(raw, config), true),
+        // Model B: the composing-buffer surface is the whole composition
+        // (Σ nailed.display_text + pending-tail derived form), not the
+        // pending tail alone. `raw_input` stays the still-editable tail.
+        Phase::Continuous { raw, nailed } => {
+            (raw.clone(), combined_display(nailed, raw, config), true)
+        }
+    };
+    ComposingResponse {
+        preedit: Some(Preedit {
+            raw_input: raw,
+            display_text: display,
+        }),
+        effect: Vec::new(),
+        selected_candidate_index: state.selected_candidate_index,
+        is_composing,
+        continuous: None,
+    }
+}
+
+fn exit_to_idle(state: &mut EngineState, effects: Vec<Effect>) -> ComposingResponse {
+    state.phase = Phase::Idle;
+    state.selected_candidate_index = -1;
+    ComposingResponse {
+        preedit: Some(Preedit::default()),
+        effect: effects,
+        selected_candidate_index: -1,
+        is_composing: false,
+        continuous: None,
+    }
+}
+
+fn noop(state: &EngineState, config: &AppConfig) -> ComposingResponse {
+    snapshot(state, config)
+}
+
+// ---- Continuous-phase helpers --------------------------------------
+
+/// `Phase::Composing { raw }` → `Phase::Continuous { raw, nailed: [] }`.
+/// Marked text was already derived from the same `raw` and with no nailed
+/// segments the Model B composing surface equals that derived form, so no
+/// preedit refresh is necessary; emit zero effects. Idle / already-Continuous
+/// / empty-raw Composing → noop (the `Continuous { raw: "", nailed: [] }`
+/// state is invalid; entering it from a degenerate empty Composing buffer
+/// would violate the "Continuous is non-empty in at least one of pending /
+/// nailed" invariant — Codex post-impl finding #2).
+fn enter_continuous(state: &mut EngineState, config: &AppConfig) -> ComposingResponse {
+    let Phase::Composing { raw } = &state.phase else {
+        return noop(state, config);
+    };
+    if raw.is_empty() {
+        return noop(state, config);
+    }
+    let raw = raw.clone();
+    let display = derived_display(&raw, config);
+    state.phase = Phase::Continuous {
+        raw: raw.clone(),
+        nailed: Vec::new(),
+    };
+    ComposingResponse {
+        preedit: Some(Preedit {
+            raw_input: raw,
+            display_text: display,
+        }),
+        effect: Vec::new(),
+        selected_candidate_index: state.selected_candidate_index,
+        is_composing: true,
+        continuous: None,
+    }
+}
+
+/// `Intent::Start { text }` arriving while in `Phase::Continuous`. Codex
+/// post-impl finding #3: silently dropping `text` would lose user input.
+/// Treats the intent as "drop continuous state, then begin a fresh
+/// Composing buffer with `text`". Emits the ResetContinuous effect trio
+/// followed by the regular Composing entry effects; final state is
+/// `Phase::Composing { raw: text }` (or Idle if `text` is empty).
+fn start_under_continuous(
+    state: &mut EngineState,
+    text: String,
+    config: &AppConfig,
+) -> ComposingResponse {
+    // Drop continuous state to Idle first.
+    state.phase = Phase::Idle;
+    state.selected_candidate_index = -1;
+    let mut effects = abort_continuous_effects();
+    let resp = enter_composing(state, text, config);
+    effects.extend(resp.effect);
+    ComposingResponse {
+        effect: effects,
+        ..resp
+    }
+}
+
+/// `Intent::SelectSuggestion { text }` arriving while in `Phase::Continuous`.
+/// Codex post-impl finding #3: silently dropping `text` would lose user
+/// selection. **Model B**: the nailed prefix is in the marked region (not
+/// the document), so committing `text` alone would lose it. Commit the
+/// whole composition with the pending tail replaced by `text` —
+/// `Σ nailed[i].display_text + text` — in one `CommitTextReplacingPreedit`,
+/// preserving the net-document parity the pre-Model-B behavior had
+/// (nailed-in-doc + text). Then exit Continuous.
+fn select_suggestion_under_continuous(
+    state: &mut EngineState,
+    text: String,
+    config: &AppConfig,
+) -> ComposingResponse {
+    if text.is_empty() {
+        // Empty suggestion: drop continuous state without inserting. Mirrors
+        // SelectSuggestion-on-Idle being a no-op.
+        return reset_continuous(state, config);
+    }
+    let Phase::Continuous { nailed, .. } = &state.phase else {
+        return noop(state, config);
+    };
+    let mut combined = nailed_prefix(nailed, config);
+    combined.push_str(&text);
+    let mut effects = finalize_effects(combined);
+    effects.push(next_word_clear_for_new_composing());
+    exit_to_idle(state, effects)
+}
+
+/// `Intent::CommitPreeditThenInsertExternal { text }` under Continuous.
+/// Codex post-impl finding #3. **Model B**: the whole composition
+/// (`Σ nailed[i].display_text` + pending derived display) plus the external
+/// text are committed in one `CommitTextReplacingPreedit` — nailed segments
+/// were never in the document, so they must ride the commit here too. Then
+/// exits Continuous. Empty `text` collapses to `noop`.
+fn commit_preedit_then_insert_external_under_continuous(
+    state: &mut EngineState,
+    external: String,
+    config: &AppConfig,
+) -> ComposingResponse {
+    if external.is_empty() {
+        return noop(state, config);
+    }
+    let Phase::Continuous { raw, nailed } = &state.phase else {
+        return noop(state, config);
+    };
+    let mut combined = combined_display(nailed, raw, config);
+    combined.push_str(&external);
+    let mut effects = finalize_effects(combined);
+    effects.push(next_word_clear_for_new_composing());
+    exit_to_idle(state, effects)
+}
+
+/// `Phase::Continuous` segment commit. `consumed_bytes >= pending.len()` is
+/// the final-commit branch (exit to Idle); otherwise mid-commit (stay in
+/// Continuous). Programmer-error inputs (out-of-range or non-char-boundary
+/// `consumed_bytes`) collapse to `noop` rather than panicking.
+// v3.5.8 Phase 9 Bug 1 (Option A): `display_text` is the swap/TPS/both-
+// scripts-formatted string the platform tap handler produced (mirroring the
+// legacy lexicon formatter); under **Model B (§10)** it is the segment's
+// text **inside the marked region**, not yet in the document. `canonical_text`
+// is the canonical dictionary key (`hanji.unwrap_or(roman)`) used for NextWord
+// association so learning stays mode-independent (user decision b). Empty
+// `canonical_text` (legacy callers) falls back to `display_text`. Model B:
+// a mid-commit emits NO `CommitTextReplacingPreedit` — it only re-renders
+// the combined marked region; the single literal document write happens at
+// final-commit (whole composition) or via Enter (`commit_raw_continuous`).
+fn commit_continuous(
+    state: &mut EngineState,
+    display_text: String,
+    canonical_text: String,
+    association_tl: String,
+    consumed_bytes: usize,
+    syllable_count: u8,
+    config: &AppConfig,
+) -> ComposingResponse {
+    let Phase::Continuous { raw, nailed } = &state.phase else {
+        return noop(state, config);
+    };
+    if display_text.is_empty()
+        || consumed_bytes == 0
+        || consumed_bytes > raw.len()
+        || !raw.is_char_boundary(consumed_bytes)
+    {
+        return noop(state, config);
+    }
+    let canonical = if canonical_text.is_empty() {
+        display_text.clone()
+    } else {
+        canonical_text
+    };
+    let pending = raw.clone();
+    let mut new_nailed = nailed.clone();
+    let raw_text = pending[..consumed_bytes].to_string();
+    let prev_end = new_nailed.last().map(|s| s.raw_span.1).unwrap_or(0);
+    let raw_span = (prev_end, prev_end + consumed_bytes);
+    let new_pending = pending[consumed_bytes..].to_string();
+    // R2: the NextWord `roman` arg — canonical TL when the platform sent
+    // it, else the raw committed slice (legacy / TPS-OOV fallback). Used
+    // for whichever single effect this commit fires below (final OR mid).
+    let next_word_roman = association_roman(&association_tl, &raw_text);
+    let segment = NailedSegment {
+        display_text: display_text.clone(),
+        canonical_text: canonical.clone(),
+        raw_text: raw_text.clone(),
+        association_tl,
+        raw_span,
+        syllable_count,
+    };
+    new_nailed.push(segment);
+
+    if new_pending.is_empty() {
+        // Final commit (Model B): the whole composition was in the marked
+        // region; write all nailed segments' display text to the document
+        // in one go, then exit to Idle. Earlier mid-commits emitted
+        // UpdateLastSelectedWord per segment; this fires the single
+        // terminal WordSelected for the final segment (no replay — Codex
+        // risk (i)).
+        // Pending is empty here, so the whole composition is just the
+        // nailed prefix (combined_display would append derived("") = "").
+        let combined = nailed_prefix(&new_nailed, config);
+        let mut effects = finalize_effects(combined);
+        effects.push(next_word_word_selected(canonical, next_word_roman, true));
+        return exit_to_idle(state, effects);
+    }
+
+    // Mid-commit (Model B): stay in Continuous, NO document write — just
+    // re-render the combined marked region (nailed prefix + new pending).
+    let combined = combined_display(&new_nailed, &new_pending, config);
+    state.phase = Phase::Continuous {
+        raw: new_pending.clone(),
+        nailed: new_nailed,
+    };
+    state.selected_candidate_index = 0;
+    ComposingResponse {
+        preedit: Some(Preedit {
+            raw_input: new_pending,
+            display_text: combined.clone(),
+        }),
+        effect: vec![
+            update_preedit(combined),
+            next_word_update_last_selected_word(canonical, next_word_roman),
+            perform_autocomplete(),
+        ],
+        selected_candidate_index: 0,
+        is_composing: true,
+        continuous: None,
+    }
+}
+
+/// Continuous-mode abort — **Model B (Codex risk (ii))**. Nailed segments
+/// were never written to the document; the whole composition (nailed +
+/// pending) lived in one marked region. `ClearPreeditWithoutCommit` clears
+/// that **entire** region, and dropping `state` (exit to Idle) discards all
+/// nailed segments. Nothing reaches the document — abort is a clean discard,
+/// not "keep nailed, drop pending". No `DeleteBackwardFromDocument`.
+fn reset_continuous(state: &mut EngineState, config: &AppConfig) -> ComposingResponse {
+    if !matches!(state.phase, Phase::Continuous { .. }) {
+        return noop(state, config);
+    }
+    exit_to_idle(state, abort_continuous_effects())
+}
+
+/// `Append { ch }` under `Phase::Continuous`. Appends to the pending tail;
+/// nailed segments are untouched. The preedit re-renders the **whole
+/// composition** (Model B). Empty `ch` collapses to noop (mirrors how
+/// Composing's empty `Append` produces a degenerate buffer state — kept
+/// guarded here rather than echoed forward).
+fn append_continuous(state: &mut EngineState, ch: String, config: &AppConfig) -> ComposingResponse {
+    let Phase::Continuous { raw, nailed } = &state.phase else {
+        return noop(state, config);
+    };
+    if ch.is_empty() {
+        return noop(state, config);
+    }
+    let mut new_pending = raw.clone();
+    new_pending.push_str(&ch);
+    let combined = combined_display(nailed, &new_pending, config);
+    state.phase = Phase::Continuous {
+        raw: new_pending.clone(),
+        nailed: nailed.clone(),
+    };
+    state.selected_candidate_index = 0;
+    step_response(new_pending, combined, 0)
+}
+
+// ---- Effect constructors ------------------------------------------
+
+fn update_preedit(display: String) -> Effect {
+    Effect {
+        kind: Some(effect::Kind::UpdatePreedit(UpdatePreedit { display })),
+    }
+}
+
+fn clear_preedit_without_commit() -> Effect {
+    Effect {
+        kind: Some(effect::Kind::ClearPreeditWithoutCommit(
+            ClearPreeditWithoutCommit {},
+        )),
+    }
+}
+
+fn commit_text_replacing_preedit(text: String) -> Effect {
+    Effect {
+        kind: Some(effect::Kind::CommitTextReplacingPreedit(
+            CommitTextReplacingPreedit { text },
+        )),
+    }
+}
+
+fn delete_backward_from_document() -> Effect {
+    Effect {
+        kind: Some(effect::Kind::DeleteBackwardFromDocument(
+            DeleteBackwardFromDocument {},
+        )),
+    }
+}
+
+fn reset_autocomplete() -> Effect {
+    Effect {
+        kind: Some(effect::Kind::ResetAutocomplete(ResetAutocomplete {})),
+    }
+}
+
+fn perform_autocomplete() -> Effect {
+    Effect {
+        kind: Some(effect::Kind::PerformAutocomplete(PerformAutocomplete {})),
+    }
+}
+
+fn reset_autocomplete_context() -> Effect {
+    Effect {
+        kind: Some(effect::Kind::ResetAutocompleteContext(
+            ResetAutocompleteContext {},
+        )),
+    }
+}
+
+/// The abort trio every "drop Continuous state without writing to the
+/// document" branch emits, in this order: clear the whole marked region,
+/// reset autocomplete, tear down NextWord's continuous strip. A caller that
+/// emits more (`start_under_continuous`) appends after the trio.
+fn abort_continuous_effects() -> Vec<Effect> {
+    vec![
+        clear_preedit_without_commit(),
+        reset_autocomplete(),
+        next_word_clear_for_new_composing(),
+    ]
+}
+
+/// The finalize trio every branch that commits text out of Composing /
+/// Continuous emits, in this order:
+/// commit `text` replacing the preedit, reset autocomplete, reset the
+/// autocomplete context. A caller that also fires a NextWord effect pushes
+/// it after the trio.
+fn finalize_effects(text: String) -> Vec<Effect> {
+    vec![
+        commit_text_replacing_preedit(text),
+        reset_autocomplete(),
+        reset_autocomplete_context(),
+    ]
+}
+
+/// v3.6.1 R2 — resolve the NextWord `roman` arg for a committed
+/// continuous segment: the candidate's canonical TL when the platform
+/// supplied it (`CommitContinuous.association_tl` / `NailedSegment
+/// .association_tl`), else the raw committed slice. The canonical-TL path
+/// keeps the learned `prev_tl` / `next_tl` aligned with a normal candidate
+/// commit (fixing continuous-vs-normal fragmentation); the raw fallback
+/// preserves pre-R2 behavior for legacy callers + TPS-OOV hanji-absent
+/// candidates that carry no canonical TL.
+fn association_roman(association_tl: &str, raw_text: &str) -> String {
+    if association_tl.is_empty() {
+        raw_text.to_owned()
+    } else {
+        association_tl.to_owned()
+    }
+}
+
+fn next_word_update_last_selected_word(text: String, roman: String) -> Effect {
+    Effect {
+        kind: Some(effect::Kind::NextWordUpdateLastSelectedWord(
+            NextWordUpdateLastSelectedWord { text, roman },
+        )),
+    }
+}
+
+fn next_word_word_selected(text: String, roman: String, trigger_prediction: bool) -> Effect {
+    Effect {
+        kind: Some(effect::Kind::NextWordWordSelected(NextWordWordSelected {
+            text,
+            roman,
+            trigger_prediction,
+        })),
+    }
+}
+
+fn next_word_clear_for_new_composing() -> Effect {
+    Effect {
+        kind: Some(effect::Kind::NextWordClearForNewComposing(
+            NextWordClearForNewComposing {},
+        )),
+    }
+}

@@ -1,0 +1,7 @@
+/home/kianing/ai-workspace/ai-taigi-keyboard/build/linux-system/CMakeFiles/taigi.dir
+/home/kianing/ai-workspace/ai-taigi-keyboard/build/linux-system/CMakeFiles/edit_cache.dir
+/home/kianing/ai-workspace/ai-taigi-keyboard/build/linux-system/CMakeFiles/rebuild_cache.dir
+/home/kianing/ai-workspace/ai-taigi-keyboard/build/linux-system/CMakeFiles/list_install_components.dir
+/home/kianing/ai-workspace/ai-taigi-keyboard/build/linux-system/CMakeFiles/install.dir
+/home/kianing/ai-workspace/ai-taigi-keyboard/build/linux-system/CMakeFiles/install/local.dir
+/home/kianing/ai-workspace/ai-taigi-keyboard/build/linux-system/CMakeFiles/install/strip.dir

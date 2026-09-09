@@ -1,0 +1,502 @@
+syntax = "proto3";
+
+package taigi.engine;
+
+option java_package = "com.siansiansu.taigikeyboard.engine.proto";
+option java_multiple_files = true;
+
+// Lexicon module — candidate ranking, dedup, scoring, sorting.
+//
+// Single op `process_candidates` lives in LexiconRequest.method oneof.
+// Pattern mirrors PhoneticsRequest.method oneof so the top-level dispatcher
+// (engine::dispatch) routes by Request.payload tag and then per-module
+// dispatch routes by oneof method.
+//
+// Out of slice (no version commitment):
+// - Capitalization (`capitalize`, `startsWithRomanLetter`) — kept platform
+//   per audit § 3 (Android does not have these in CandidateProcessor;
+//   moving them to Rust would change Android behavior)
+//
+// v3.5.7 added `classify_input` + `is_hanzi` for IME autocomplete classifier
+// and Tab3 hanzi short-circuit. Tab3 parity correction in same slice —
+// Android `DictionarySearchViewModel.kt:97` previously used Kotlin `Char.code`
+// (16-bit), missing CJK Extensions B/C/D/E.
+
+// =========================================================================
+// Request envelope
+// =========================================================================
+
+message LexiconRequest {
+  oneof method {
+    ProcessCandidatesRequest  process_candidates    = 10;  // ranking
+    InstallRequest            install               = 11;  // lexicon read-path
+    SearchRequest             search                = 12;  // autocomplete entry
+    SearchWithSourcesRequest  search_with_sources   = 13;  // Tab3 multi-source
+    SearchByHanziRequest      search_by_hanzi       = 14;  // Tab3 hanzi prefix
+    AssocLookupRequest        assoc_lookup          = 15;  // bundled bigram
+    ClassifyInputRequest      classify_input        = 16;  // v3.5.7 IME classifier
+    IsHanziRequest            is_hanzi              = 17;  // v3.5.7 Tab3 short-circuit
+    DictionaryFiltersRequest  dictionary_filters    = 18;  // v3.5.8 toggles → bitmasks + enabled codes
+  }
+}
+
+// =========================================================================
+// Request payloads
+// =========================================================================
+
+// `ProcessCandidatesRequest` is the merged-list ranking pipeline:
+// remove_duplicates → calculate_score per candidate → sort_by_score →
+// (optional) remove_display_duplicates if `tps_dedup_enabled`.
+//
+// Replaces both platforms' inline `LexiconService` calls into
+// `CandidateProcessor.removeDuplicates`, `sortByScore`, and (TPS-gated)
+// `removeDisplayDuplicates`.
+//
+// `tps_dedup_enabled` is platform-decided (iOS `inputMode == .tps`,
+// Android `settings?.inputMode == "tps"`); audit § 3 confirms identical
+// semantics today. Engine does not derive it from `input_mode`.
+//
+// `include_breakdown` toggles per-candidate ScoreBreakdown serialization
+// for #if DEBUG logging on iOS / Android. Off in release builds for zero
+// per-call serialization overhead.
+//
+// `now_ms` is caller-supplied to keep ranking deterministic in tests.
+message ProcessCandidatesRequest {
+  repeated TaigiWord raw = 1;
+  string normalized_input = 2;
+  bool tps_dedup_enabled = 4;
+  repeated FrequencyEntry freq = 5;
+  int64 now_ms = 6;
+  bool include_breakdown = 7;
+  // `merge_order_only = true` skips score + sort and returns the
+  // dedup result directly in input (merged) order. Replaces iOS
+  // `LexiconService` cold-start fallback that previously used Swift
+  // `CandidateProcessor.removeDuplicates` + `removeDisplayDuplicates`.
+  // Output `breakdown` is always empty when this flag is set —
+  // there is no scoring to break down. `now_ms` and `freq` are
+  // ignored. `tps_dedup_enabled` still gates the display dedup pass
+  // (must run AFTER the engine dedup, same ordering invariant as
+  // the score path).
+  bool merge_order_only = 8;
+}
+
+// `InstallRequest` is the (idempotent) lexicon read-path bootstrap. The
+// platform passes absolute Bundle / filesDir paths; engine opens mmap'd
+// readers and the fst prefix index, validates magic bytes + versions, and
+// atomically swaps in the new `EngineState`. Reinstall (Android asset
+// version bump per audit D-9) reuses this method — same shape, the engine
+// is responsible for atomic-on-success swap; old state stays intact if any
+// step fails.
+//
+// Path validation: any NUL byte (`\0`) or non-absolute path is rejected
+// with `LexiconError::InvalidPath` / `PathNotAbsolute` via the proto error
+// envelope. Engine NEVER panics on user-supplied paths.
+message InstallRequest {
+  string trie_path             = 1;  // absolute path to dictionary.fst
+  string dictionary_bin_path   = 2;  // absolute path to dictionary.bin (TKDB)
+  string association_bin_path  = 3;  // absolute path to association.bin (TKWA, bundled)
+  uint32 dictionary_version    = 4;  // platform-supplied stamp (Android: dictionary_app_version.txt; iOS: bundle build number)
+
+  // v3.5.8 Phase 6 — absolute path to `syllables.fst` (Phase-2 TL syllable
+  // inventory). Optional on the wire: empty string skips loading and
+  // `EngineState.syllable_inventory` stays `None`. Phase 7 / 8 platform
+  // bundles populate this; Phase 6 only wires the field through so the
+  // composing dispatch can call `tl::valid_span_endings` against the
+  // installed inventory once the platform pipeline is ready.
+  string syllable_inventory_path = 5;
+}
+
+// `SearchRequest` is the IME autocomplete entry point. `input` is the
+// already-segmented input (iOS `segmentedInput`; Android post-buildSearchKey
+// drop per audit D-1 resolution). Engine runs `phonetics::api::normalize_input`
+// internally as part of search.
+//
+// **D-8 hard guard**: when `input_type == INPUT_TYPE_HANZI`, the engine
+// returns an empty `rows` list WITHOUT consulting any reader. Verified by
+// `INVARIANT_LEX_HANZI_GUARD` (engine + iOS + Android per Codex Mod 1).
+//
+// `tps_or_mapped_to_er` is OBSOLETE since C-3a — engine runtime ignores
+// the field. The er↔or dialect axis is now handled at build time via
+// dual-emit `tps:` keys (ㄜ + ㄛ glyphs at the same rowid) in
+// `dictionary.fst`, always-on for every TPS user. The field stays on
+// the wire so existing platform callers continue to compile; a later
+// admin sweep removes the platform-side setters.
+//
+// `enabled_sources_bitmask` is the platform's source-toggle state encoded
+// as a 12-bit bitmask (mirrors `bitToSource` map; see audit §4 `D-13`
+// invariant). 0 = no sources enabled (engine returns empty).
+//
+// kautian subcollections (binary v3): the HIGH region carries the user's
+// per-subcollection enable bits — bit 13 = active sentinel (0 ⇒ engine skips
+// subcollection gating = all on, the legacy/pre-UI default), bits 14..=25 =
+// enable mask (main | accent[10] | name, same layout as the record subtag).
+// ENCODE (Phase 3): `compute_filters` sets these from `DictionaryToggles
+// .kautian_subcoll` when present; a caller that leaves the sub-message absent
+// (a platform whose UI is not wired yet) keeps bit 13 clear = legacy all-on.
+// Decode: `Filter::from_enabled_bitmask` in dictionary_reader.rs. Full layout:
+// `docs/engine/binary-format.md` §4.5. Same field semantics apply to
+// `SearchWithSourcesRequest` / `SearchByHanziRequest` below.
+message SearchRequest {
+  string input                       = 1;
+  InputType input_type               = 2;
+  InputMode input_mode               = 3;
+  uint32 limit                       = 4;
+  bool tps_or_mapped_to_er           = 5;  // OBSOLETE — see comment block above; runtime ignored since C-3a
+  uint32 enabled_sources_bitmask     = 6;
+}
+
+// `SearchWithSourcesRequest` is Tab3's all-source lookup. Unlike `SearchRequest`,
+// the input may be either romanized or hanji; the engine internally classifies
+// and dispatches to the matching prefix family. Mirrors iOS
+// `DictionaryRepository.searchWithSources`.
+message SearchWithSourcesRequest {
+  string input                   = 1;
+  InputMode input_mode           = 2;
+  uint32 limit                   = 3;
+  // Source-toggle bitmask filtering Tab3 results. Bit layout encodes
+  // sources(0-8,11) + khiin(9) + dev(10, always set) + variant(12).
+  // Plumbed end-to-end since v3.5.6 fix r3173440126; prior to that,
+  // api.rs hardcoded `u32::MAX`, which both bypassed source filters
+  // AND falsely forced khiin/variant on regardless of user toggles.
+  uint32 enabled_sources_bitmask = 4;
+}
+
+// `SearchByHanziRequest` is Tab3's hanzi-prefix-only lookup. Mirrors iOS
+// `DictionaryRepository.searchByHanzi`.
+message SearchByHanziRequest {
+  string query                   = 1;
+  InputMode input_mode           = 2;
+  uint32 limit                   = 3;
+  // Same semantics as SearchWithSourcesRequest.enabled_sources_bitmask.
+  uint32 enabled_sources_bitmask = 4;
+}
+
+// `AssocLookupRequest` is the bundled-bigram lookup against `association.bin`
+// (TKWA). Called by the platform NextWord services (iOS `NextWordService.swift`
+// / Android `NextWordService.kt`) through their respective bridges
+// (`RustEngineBridge.lexiconAssocLookup` / `LexiconBridge.assocLookup`).
+//
+// **Crate isolation invariant**: the Rust `engine/nextword` crate stays
+// independent of `engine/lexicon`. NextWord never imports or calls into
+// lexicon directly — the platform owns the cross-domain wiring (audit
+// goal-1 cross-module isolation).
+message AssocLookupRequest {
+  string previous_word           = 1;
+  uint32 limit                   = 2;
+  // Source-toggle bitmask filtering bundled bigram entries. Layout matches
+  // the low 9 bits of `enabled_sources_bitmask` in `SearchRequest`. Sentinel
+  // `u32::MAX` short-circuits the filter (all sources enabled). Plumbed end
+  // -to-end since v3.5.6 fix r3173013233 — prior to that, api.rs hardcoded
+  // `u32::MAX`, regressing the platform-side filter that used to honor
+  // `EnabledDictionaries.associationBitmask()`.
+  uint32 enabled_sources_bitmask = 3;
+}
+
+// `ClassifyInputRequest` is the IME autocomplete classifier entry. The engine
+// resolves `(InputType, search_key)` in a single FFI call. The platform-side
+// per-keystroke classifier shells it superseded were retired in v3.5.8 Item 13
+// together with the platform lexicon fallback (the Continuous engine dispatch
+// now owns classification end-to-end).
+//
+// `mode` is intentionally absent: classification is mode-independent.
+message ClassifyInputRequest {
+  string raw = 1;
+}
+
+// `IsHanziRequest` is the low-level CJK predicate used by Tab3 search to
+// short-circuit hanzi queries. Tab3 needs the predicate without paying the
+// search_key build cost. See INVARIANT_LEX_INPUT_CLASSIFICATION_HANZI_RANGE.
+message IsHanziRequest {
+  string text = 1;
+}
+
+// `DictionaryFiltersRequest` resolves the user's 12-toggle dictionary
+// preferences into the ready-to-send bitmasks consumed by `SearchRequest` /
+// `SearchWithSourcesRequest` / `SearchByHanziRequest` / `AssocLookupRequest`.
+//
+// Single Rust source of truth replaces verbatim-mirrored bit math previously
+// in `ios/.../EnabledDictionaries.swift` + `android/.../EnabledDictionaries.kt`
+// (~80 LOC pure-logic duplication, audit residue 2026-05-04 § A.1 P2).
+//
+// `toggles` may be absent on the wire (prost `Option<DictionaryToggles>`);
+// the engine treats absence as `DictionaryToggles::default()` (all false).
+message DictionaryFiltersRequest {
+  DictionaryToggles toggles = 1;
+}
+
+// `DictionaryFiltersResponse` carries ready-to-send outputs:
+// - `dictionary_filter_bitmask` plumbs straight into
+//   `SearchRequest.enabled_sources_bitmask` / `SearchWithSourcesRequest` /
+//   `SearchByHanziRequest`. Layout: bits 0-8 + 11 sources, bit 9 khiin,
+//   bit 10 dev (always set), bit 12 variant.
+// - `assoc_lookup_bitmask` plumbs straight into
+//   `AssocLookupRequest.enabled_sources_bitmask`. Equals `u32::MAX` when
+//   ALL 9 association sources are enabled (preserves the documented
+//   sentinel shortcut at `lexicon.proto:166-173`); otherwise equals the
+//   association mask (bits 0-8). Platform NextWord callers forward
+//   directly without re-branching.
+// - `enabled_source_codes` lists every `DictionarySourceCode` whose source
+//   the user has toggled on. `DEV` + `CUSTOM` are always present
+//   (non-toggleable). Platforms decode via explicit switch/map into their
+//   `DictionarySource` enum — DO NOT use Swift `rawValue` or Kotlin
+//   `ordinal` since the platform enums lack stable numeric values.
+message DictionaryFiltersResponse {
+  uint32                          dictionary_filter_bitmask  = 1;
+  uint32                          assoc_lookup_bitmask       = 2;
+  repeated DictionarySourceCode   enabled_source_codes       = 3;
+}
+
+// =========================================================================
+// Response envelope
+// =========================================================================
+
+message LexiconResponse {
+  oneof result {
+    ProcessCandidatesResponse  process_candidates_result   = 10;
+    InstallResponse            install_result              = 11;
+    SearchResponse             search_result               = 12;
+    SearchWithSourcesResponse  search_with_sources_result  = 13;
+    SearchByHanziResponse      search_by_hanzi_result      = 14;
+    AssocLookupResponse        assoc_lookup_result         = 15;
+    ClassifyInputResponse      classify_input_result       = 16;
+    IsHanziResponse            is_hanzi_result             = 17;
+    DictionaryFiltersResponse  dictionary_filters_result   = 18;
+  }
+}
+
+// =========================================================================
+// Response payloads
+// =========================================================================
+
+// `ProcessCandidatesResponse.ranked` is the dedup → score → sort →
+// (TPS-gated) display-dedup pipeline output.
+//
+// `breakdown` is populated only when the request had
+// `include_breakdown = true`; when populated, `breakdown[i]` corresponds
+// to `ranked[i]` so platform-side debug formatters can pair them.
+message ProcessCandidatesResponse {
+  repeated TaigiWord ranked = 1;
+  repeated ScoreBreakdown breakdown = 2;
+}
+
+// `InstallResponse` carries diagnostic counts. Platform diagnostic surfaces
+// log these to confirm install success.
+message InstallResponse {
+  uint64 dictionary_record_count   = 1;
+  uint64 prefix_index_entry_count  = 2;
+}
+
+// `SearchResponse.rows` reuses `TaigiWord` (same shape — id / roman / hanji /
+// length_score / source_bitmask). Platforms convert to `TaigiWord` (Swift /
+// Kotlin) at the bridge layer, mirroring the existing ranking-slice pattern.
+message SearchResponse {
+  repeated TaigiWord rows = 1;
+}
+
+message SearchWithSourcesResponse {
+  repeated TaigiWord rows = 1;
+}
+
+message SearchByHanziResponse {
+  repeated TaigiWord rows = 1;
+}
+
+// `AssocLookupResponse.entries` is a vector of bundled bigram entries. The
+// platform NextWord services rank/filter further; the engine just emits
+// the raw matches.
+message AssocLookupResponse {
+  repeated LexiconAssocEntry entries = 1;
+}
+
+// `ClassifyInputResponse` carries the classifier output. `input_type` resolves
+// via short-circuit precedence (hanzi → tone-marked → numeric-tone →
+// no-tone). `search_key` mirrors the raw input verbatim — C-1 retired the
+// per-keystroke TPS→TL conversion now that the lexicon `tps:` FST family
+// is hit directly via `SearchRequest{input_mode=Tps}`. See
+// INVARIANT_LEX_INPUT_CLASSIFICATION_PRECEDENCE +
+// INVARIANT_LEX_INPUT_CLASSIFICATION_SEARCH_KEY.
+message ClassifyInputResponse {
+  InputType input_type = 1;
+  string    search_key = 2;
+}
+
+message IsHanziResponse {
+  bool is_hanzi = 1;
+}
+
+// =========================================================================
+// Shared value types
+// =========================================================================
+
+// `TaigiWord` mirrors iOS `Lexicon/Models/TaigiWord.swift` /
+// Android `ime/dictionary/TaigiWord.kt`. `id` is the dictionary row id;
+// `length_score` is the dictionary frequency / length proxy used as the
+// `baseFreqScore` cold-start signal. `source_bitmask` is the
+// `dictionary/common/source_bits.py` bitmask consumed by the
+// SOURCE_TIERS first-match-wins multiplier.
+//
+// Optional fields use proto3 `optional` so platforms can distinguish
+// "field absent" from "scalar default" — important for `length_score`
+// where 0 is a meaningful zero-score signal vs absent (use default tier).
+message TaigiWord {
+  int64 id = 1;
+  string roman = 2;
+  optional string hanji = 3;
+  optional int32 length_score = 4;
+  optional uint32 source_bitmask = 5;
+}
+
+// `FrequencyEntry` is the per-candidate user-frequency snapshot. Caller
+// pre-filters to candidate-relevant keys to keep the request small.
+// `display_text_key` matches `TaigiWord.displayText` (= hanji ?? roman)
+// so the engine can `find` matching entries during scoring.
+//
+// v3.6.1 R5 — user-frequency identity is the `(display_text_key,
+// canonical_tl)` PAIR (Core Principle #7). `canonical_tl` is the
+// candidate's canonical-TL reading, snapshotted BEFORE the POJ-render
+// pass (= `RawCandidate.canonical_tl`). One `display_text` (e.g. 重) now
+// carries one entry PER reading (重/tîng vs 重/tāng), so 一字多音 keep
+// separate frequency buckets. `canonical_tl == ""` is the LEGACY sentinel
+// for pre-R5 rows / old-backup imports the platform could not re-key; the
+// engine treats it as a tolerant fallback bucket consulted by ALL readings
+// of that `display_text` until each is re-learned (see
+// `ranking::FrequencyMap::get`). Empty string is the canonical legacy
+// marker — the field is NOT `optional`.
+message FrequencyEntry {
+  string display_text_key = 1;
+  uint32 count = 2;
+  int64 last_used_ms = 3;
+  string canonical_tl = 4;
+}
+
+// `ScoreBreakdown` is the single source of truth for both ranking math
+// and debug logging — total = sum of the six fields. The pre-Path-G iOS
+// `CandidateProcessor.ScoreBreakdown` and Android
+// `CandidateProcessor.ScoreBreakdown` mirrors are gone (Android deleted
+// PR #192; iOS retains only an unrelated 4-LOC residual).
+message ScoreBreakdown {
+  int32 user_freq_score = 1;
+  int32 recency_bonus = 2;
+  int32 exact_bonus = 3;
+  int32 completion_penalty = 4;
+  int32 closeness_bonus = 5;
+  int32 base_freq_score = 6;
+}
+
+// `LexiconAssocEntry` is one bundled bigram tuple — `previous_word` /
+// `candidate_word` (hanzi) / `candidate_tl` (TL) / `count`. Read-only; the
+// mutable `user_association.db` SQLite half is OUT OF SCOPE for v3.5.6
+// (audit § scope D-Boundary).
+//
+// `candidate_tl` carries the TL string per entry from the bundled
+// association.bin wire format (next_tl). Without it, the platform NextWord
+// pipeline cannot reconstruct the romanized form for predictions.
+message LexiconAssocEntry {
+  string previous_word   = 1;
+  string candidate_word  = 2;
+  uint32 count           = 3;
+  string candidate_tl    = 4;
+}
+
+// `InputType` is lexicon-local — only `SearchRequest` consumes it. Not
+// promoted to `envelope.proto` because no other module needs to classify
+// input by hanzi/roman/tone.
+enum InputType {
+  INPUT_TYPE_UNSPECIFIED      = 0;
+  INPUT_TYPE_ROMAN_NO_TONE    = 1;
+  INPUT_TYPE_ROMAN_WITH_TONE  = 2;
+  INPUT_TYPE_HANZI            = 3;
+}
+
+// `InputMode` is lexicon-local. Mirrors the platform-side input-mode setting
+// (TL / POJ / TPS). `engine/protos/envelope.proto::AppConfig.input_mode` uses
+// a string today; we re-encode here as enum so the lexicon bridge surface
+// stays type-safe at the FFI boundary. Values map: "tl"→TL, "poj"→POJ,
+// "tps"→TPS; anything else → UNSPECIFIED (engine treats as TL).
+enum InputMode {
+  INPUT_MODE_UNSPECIFIED  = 0;
+  INPUT_MODE_TL           = 1;
+  INPUT_MODE_POJ          = 2;
+  INPUT_MODE_TPS          = 3;
+}
+
+// `DictionaryToggles` is the 12-boolean snapshot of user dictionary
+// preferences that drives `DictionaryFiltersRequest`. Field tags map
+// directly to the bit positions the engine consumes; reordering tags is
+// a wire break.
+//
+// Mirrors the iOS `EngineSettings` + Android `EngineSettings` boolean
+// surface (see `EnabledDictionaries.swift` / `.kt` pre-v3.5.8).
+//
+// kautian subcollections (binary v3, Phase 3 ENCODE): `kautian_subcoll`
+// carries the user's per-subcollection enable state. PRESENCE of the
+// sub-message is the active sentinel — a platform that ships the toggles
+// sets it; any caller that leaves it absent (a platform whose UI is not
+// yet wired, NextWord) signals "no subcollection gating" and the engine
+// keeps the legacy all-on behaviour (wire bit 13 stays 0). `compute_filters`
+// owns the subtag bit packing so the layout lives in Rust only.
+message DictionaryToggles {
+  bool kautian = 1;  // 教育部臺灣台語常用詞辭典
+  bool taigitv = 2;  // 台語新詞辭庫
+  bool itaigi  = 3;  // iTaigi 華台對照典
+  bool sitbut  = 4;  // 台灣植物名彙
+  bool taihoa  = 5;  // 台華線頂對照典
+  bool taijit  = 6;  // 台日大辭典
+  bool kungge  = 7;  // 台語工藝詞庫
+  bool stti    = 8;  // 學科術語辭典
+  bool khpoo   = 9;  // 腔口補充資料
+  bool variant = 10; // 異用字 (filter bit 12)
+  bool khiin   = 11; // 在來字 (filter bit 9)
+  bool lkk     = 12; // LKK漢羅合用建議用字
+  bool dev     = 14; // 開發者補充辭典 (詞庫增補檔案, filter bit 10) — default on, now toggleable
+  // kautian subcollection toggles. Absent ⇒ engine skips the subcollection
+  // gate (legacy all-on). Only meaningful when `kautian = true`.
+  KautianSubcollToggles kautian_subcoll = 13;
+}
+
+// `KautianSubcollToggles` is the per-subcollection enable state for the
+// kautian source (Phase 3). The main subcollection (主條目 / headword) is
+// NOT a field — it is always on whenever the kautian master toggle is on,
+// so `compute_filters` sets its subtag bit unconditionally when this
+// message is present. Field tags map to the kautian subtag bit positions:
+// accent tag N → subtag bit N (config.yaml `dialect_columns` order), and
+// `name_appendix` → subtag bit 11. Bit layout owner is Rust
+// `engine/lexicon/src/dictionary_reader.rs` (`KAUTIAN_SUBTAG_*`); see
+// `docs/engine/binary-format.md` §4.5.
+message KautianSubcollToggles {
+  bool accent_lukang    = 1;  // 鹿港偏泉腔 (subtag bit 1)
+  bool accent_sansia    = 2;  // 三峽偏泉腔 (subtag bit 2)
+  bool accent_taipak    = 3;  // 臺北偏泉腔 (subtag bit 3)
+  bool accent_gilan     = 4;  // 宜蘭偏漳腔 (subtag bit 4)
+  bool accent_tainan    = 5;  // 臺南混合腔 (subtag bit 5)
+  bool accent_kaohsiung = 6;  // 高雄混合腔 (subtag bit 6)
+  bool accent_kinmen    = 7;  // 金門偏泉腔 (subtag bit 7)
+  bool accent_makung    = 8;  // 馬公偏泉腔 (subtag bit 8)
+  bool accent_sintik    = 9;  // 新竹偏泉腔 (subtag bit 9)
+  bool accent_taichung  = 10; // 臺中偏漳腔 (subtag bit 10)
+  bool name_appendix    = 11; // 姓名附錄 名+姓 (subtag bit 11)
+}
+
+// `DictionarySourceCode` is the wire-stable mapping for
+// `DictionaryFiltersResponse.enabled_source_codes`. Decoupled from platform
+// `DictionarySource` enum raw values — Swift uses `String` raw values and
+// Kotlin has no stable numeric value beyond `ordinal`. Platforms decode
+// via explicit switch/map.
+//
+// DO NOT renumber: this is wire format. New sources append at the end.
+enum DictionarySourceCode {
+  DICT_SOURCE_UNSPECIFIED = 0;
+  DICT_SOURCE_KAUTIAN     = 1;
+  DICT_SOURCE_TAIGITV     = 2;
+  DICT_SOURCE_ITAIGI      = 3;
+  DICT_SOURCE_SITBUT      = 4;
+  DICT_SOURCE_TAIHOA      = 5;
+  DICT_SOURCE_TAIJIT      = 6;
+  DICT_SOURCE_KUNGGE      = 7;
+  DICT_SOURCE_STTI        = 8;
+  DICT_SOURCE_KHPOO       = 9;
+  DICT_SOURCE_KHIIN       = 10;
+  DICT_SOURCE_LKK         = 11;
+  DICT_SOURCE_DEV         = 12;  // always-on (non-toggleable)
+  DICT_SOURCE_CUSTOM      = 13;  // always-on (non-toggleable)
+}

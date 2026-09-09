@@ -1,0 +1,74 @@
+<!--
+  The scheduled task the installer registers (roadmap W9): the headless daily
+  update check, five minutes after logon and then once a day. It runs
+  `TaigiKeyboardSettings.exe` with the check-updates switch. `@@COMMAND@@` is
+  the installed exe's absolute path, filled in by the installer's [Code]
+  section before `schtasks /Create /XML`.
+
+  No principal user is named: the task binds to the account Setup runs as, and
+  `RunLevel` keeps the task itself least-privileged. Why the installer creates
+  it elevated is in docs/architecture/windows-release.md.
+
+  TWO THINGS THIS FILE MUST NOT HAVE, both learned by running the installer
+  for the first time (2026-09-01):
+
+  1. No `<?xml ... encoding="UTF-8"?>` declaration. `schtasks /Create /XML`
+     hands the file to a parser that reads a declared encoding as a promise
+     about a UTF-16 buffer, so a UTF-8 declaration fails with
+     "(1,40) unrecognized encoding" and a UTF-8 BOM fails with
+     "(1,2) invalid syntax". No declaration at all is valid XML (UTF-8 is the
+     default) and is what schtasks accepts. Keep this file ASCII: the
+     installer rewrites it with Inno's byte-oriented string functions.
+  2. No double dash anywhere inside a comment. XML forbids the sequence, and
+     writing out a command-line switch is the easy way to produce one by
+     accident: "(4,62) invalid comment syntax" is what that costs. (The
+     switch itself is fine where it belongs, in Arguments below: the rule is
+     about comments, not about element content.)
+-->
+<Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>Checks once a day whether a newer TaigiKeyboard is published.</Description>
+    <URI>\TaigiKeyboard Update Check</URI>
+  </RegistrationInfo>
+  <Triggers>
+    <LogonTrigger>
+      <Enabled>true</Enabled>
+      <Delay>PT5M</Delay>
+    </LogonTrigger>
+    <CalendarTrigger>
+      <StartBoundary>2026-01-01T12:00:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+      <RandomDelay>PT1H</RandomDelay>
+    </CalendarTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="User">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>true</RunOnlyIfNetworkAvailable>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <Hidden>true</Hidden>
+    <RunOnlyIfIdle>false</RunOnlyIfIdle>
+    <WakeToRun>false</WakeToRun>
+    <ExecutionTimeLimit>PT5M</ExecutionTimeLimit>
+    <Priority>7</Priority>
+  </Settings>
+  <Actions Context="User">
+    <Exec>
+      <Command>@@COMMAND@@</Command>
+      <Arguments>--check-updates</Arguments>
+    </Exec>
+  </Actions>
+</Task>
