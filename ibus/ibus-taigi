@@ -16,7 +16,7 @@ if "--xml" in sys.argv:
     <name>taigi</name>
     <longname>Taigi Keyboard</longname>
     <description>Taiwanese input method</description>
-    <language>nan</language>
+    <language>taigi</language>
     <license>Apache-2.0</license>
     <author>Taigi Keyboard contributors</author>
     <icon>input-keyboard</icon>
@@ -103,10 +103,15 @@ class TaigiEngine(IBus.Engine):
         self.update_lookup_table(table, bool(candidates))
 
     def do_process_key_event(self, keyval, keycode, state):
+        # IBus sends both press and release events. Only process the press;
+        # handling both makes every typed character appear twice.
+        if state & IBus.ModifierType.RELEASE_MASK:
+            return False
         if state & (IBus.ModifierType.CONTROL_MASK | IBus.ModifierType.MOD1_MASK | IBus.ModifierType.SUPER_MASK):
             if state & IBus.ModifierType.CONTROL_MASK and state & IBus.ModifierType.SHIFT_MASK:
                 if keyval in (IBus.KEY_1, IBus.KEY_2, IBus.KEY_3):
-                    self.apply("mode=" + chr(keyval))
+                    mode = {IBus.KEY_1: "tl", IBus.KEY_2: "poj", IBus.KEY_3: "tps"}[keyval]
+                    self.apply("mode=" + mode)
                     return True
             return False
         if keyval == IBus.KEY_Escape:
@@ -172,7 +177,7 @@ def main():
         name="taigi",
         longname="Taigi Keyboard",
         description="Taiwanese input method",
-        language="nan",
+        language="taigi",
         license="Apache-2.0",
         author="Taigi Keyboard contributors",
         icon="input-keyboard",
