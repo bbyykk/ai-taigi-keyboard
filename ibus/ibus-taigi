@@ -4,6 +4,7 @@
 import ctypes
 import os
 import sys
+import time
 
 import gi
 gi.require_version("IBus", "1.0")
@@ -28,6 +29,37 @@ if "--xml" in sys.argv:
 
 LIBRARY = "/usr/lib/x86_64-linux-gnu/taigi-keyboard/liblinux_ffi.so"
 DICTIONARIES = "/usr/share/taigi-keyboard/dictionaries"
+SHIFT_TAP_MAX_SECONDS = 0.5
+CANDIDATE_SLOT_KEYS = "qwdfzxvy;"
+
+
+class ShiftTapTracker:
+    """Recognise a standalone short Shift press as a language-mode switch."""
+
+    def __init__(self, clock=time.monotonic):
+        self._clock = clock
+        self._pending = None
+
+    def key_down(self, keyval, *, other_modifier_held=False):
+        """Record a Shift press, or disqualify the pending press on any key."""
+        if keyval in (IBus.KEY_Shift_L, IBus.KEY_Shift_R):
+            if not other_modifier_held and self._pending is None:
+                self._pending = (keyval, self._clock())
+            else:
+                self._pending = None
+            return
+        self._pending = None
+
+    def key_up(self, keyval):
+        """Consume a release and report whether it completes a Shift tap."""
+        pending = self._pending
+        self._pending = None
+        if pending is None or pending[0] != keyval:
+            return False
+        return self._clock() - pending[1] < SHIFT_TAP_MAX_SECONDS
+
+    def clear(self):
+        self._pending = None
 
 
 class RustEngine:
@@ -71,6 +103,32 @@ class TaigiEngine(IBus.Engine):
         self.rust = RustEngine()
         self.candidates = []
         self.composing = False
+        self.language_mode = "taigi"
+        self.shift_tap = ShiftTapTracker()
+
+    def toggle_language_mode(self):
+        """Switch between Taigi composition and the host's normal English input."""
+        if self.composing:
+            self.apply("commit")
+        self.language_mode = "english" if self.language_mode == "taigi" else "taigi"
+        self.candidates = []
+        self.composing = False
+
+    def candidate_slot_for_key(self, keyval, state):
+        """Return the Standard-tone candidate slot for an unmodified key."""
+        if not self.composing or not self.candidates:
+            return None
+        if state & (
+            IBus.ModifierType.SHIFT_MASK
+            | IBus.ModifierType.CONTROL_MASK
+            | IBus.ModifierType.MOD1_MASK
+            | IBus.ModifierType.SUPER_MASK
+        ):
+            return None
+        try:
+            return CANDIDATE_SLOT_KEYS.index(chr(keyval).lower())
+        except (ValueError, TypeError):
+            return None
 
     def apply(self, command):
         response = self.rust.command(command)
@@ -78,6 +136,7 @@ class TaigiEngine(IBus.Engine):
         candidates = []
         composing = False
         commit = []
+        delete_count = 0
         for line in response.splitlines():
             if line.startswith("preedit="):
                 preedit = unescape(line[8:])
@@ -89,30 +148,60 @@ class TaigiEngine(IBus.Engine):
                 candidates.append(unescape(line.split("\t", 1)[1]))
             elif line.startswith("commit="):
                 commit.append(unescape(line[7:]))
+            elif line == "delete=1":
+                delete_count += 1
 
         for text in commit:
             self.commit_text(IBus.Text.new_from_string(text))
+        for _ in range(delete_count):
+            self.delete_surrounding_text(-1, 1)
         self.candidates = candidates
         self.composing = composing
         self.update_preedit_text(
             IBus.Text.new_from_string(preedit), len(preedit), composing
         )
         table = IBus.LookupTable.new(9, 0, False, False)
-        for candidate in candidates[:9]:
+        for index, candidate in enumerate(candidates[:9]):
+            table.set_label(
+                index,
+                IBus.Text.new_from_string(CANDIDATE_SLOT_KEYS[index]),
+            )
             table.append_candidate(IBus.Text.new_from_string(candidate))
         self.update_lookup_table(table, bool(candidates))
 
     def do_process_key_event(self, keyval, keycode, state):
         # IBus sends both press and release events. Only process the press;
         # handling both makes every typed character appear twice.
-        if state & IBus.ModifierType.RELEASE_MASK:
+        is_release = bool(state & IBus.ModifierType.RELEASE_MASK)
+        is_shift = keyval in (IBus.KEY_Shift_L, IBus.KEY_Shift_R)
+        if is_release:
+            if is_shift and self.shift_tap.key_up(keyval):
+                self.toggle_language_mode()
             return False
+
+        if is_shift:
+            self.shift_tap.key_down(
+                keyval,
+                other_modifier_held=bool(
+                    state
+                    & (
+                        IBus.ModifierType.CONTROL_MASK
+                        | IBus.ModifierType.MOD1_MASK
+                        | IBus.ModifierType.SUPER_MASK
+                    )
+                ),
+            )
+            return False
+
+        self.shift_tap.key_down(keyval)
         if state & (IBus.ModifierType.CONTROL_MASK | IBus.ModifierType.MOD1_MASK | IBus.ModifierType.SUPER_MASK):
             if state & IBus.ModifierType.CONTROL_MASK and state & IBus.ModifierType.SHIFT_MASK:
                 if keyval in (IBus.KEY_1, IBus.KEY_2, IBus.KEY_3):
                     mode = {IBus.KEY_1: "tl", IBus.KEY_2: "poj", IBus.KEY_3: "tps"}[keyval]
                     self.apply("mode=" + mode)
                     return True
+            return False
+        if self.language_mode == "english":
             return False
         if keyval == IBus.KEY_Escape:
             self.apply("reset")
@@ -128,11 +217,10 @@ class TaigiEngine(IBus.Engine):
         if keyval == IBus.KEY_space and self.composing:
             self.apply("select=0")
             return True
-        if self.composing and IBus.KEY_1 <= keyval <= IBus.KEY_9:
-            index = keyval - IBus.KEY_1
-            if index < len(self.candidates):
-                self.apply("select=" + str(index))
-                return True
+        index = self.candidate_slot_for_key(keyval, state)
+        if index is not None and index < len(self.candidates):
+            self.apply("select=" + str(index))
+            return True
         if 0x20 <= keyval <= 0x7e:
             self.apply("append=" + chr(keyval))
             return True
@@ -143,9 +231,11 @@ class TaigiEngine(IBus.Engine):
             self.apply("select=" + str(index))
 
     def do_reset(self):
+        self.shift_tap.clear()
         self.apply("reset")
 
     def do_focus_out(self):
+        self.shift_tap.clear()
         self.apply("reset")
 
 
