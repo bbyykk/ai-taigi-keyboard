@@ -63,6 +63,9 @@ public:
         if (composing && !preedit.empty()) ic_->inputPanel().setPreedit(Text(preedit, TextFormatFlag::Underline));
         if (!candidates_.empty()) {
             auto list = std::make_unique<CommonCandidateList>();
+            // Match the horizontal candidate rows used by the other desktop
+            // front ends instead of Fcitx's default vertical layout.
+            list->setLayoutHint(CandidateLayoutHint::Horizontal);
             for (size_t i = 0; i < candidates_.size(); ++i)
                 list->append<SelectableCandidate>(Text(candidates_[i]), this, i);
             ic_->inputPanel().setCandidateList(std::move(list));
