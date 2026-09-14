@@ -41,6 +41,42 @@ class IBusEventTest(unittest.TestCase):
         release = ibus_taigi.IBus.ModifierType.RELEASE_MASK
         self.assertFalse(engine.do_process_key_event(ibus_taigi.IBus.KEY_a, 0, release))
 
+    def test_backspace_is_only_consumed_while_composing(self):
+        engine = ibus_taigi.TaigiEngine.__new__(ibus_taigi.TaigiEngine)
+        engine.language_mode = "taigi"
+        engine.composing = False
+        engine.candidates = []
+        commands = []
+        engine.apply = commands.append
+        engine.shift_tap = ibus_taigi.ShiftTapTracker(clock=iter([]).__next__)
+
+        self.assertFalse(
+            engine.do_process_key_event(ibus_taigi.IBus.KEY_BackSpace, 0, 0)
+        )
+        self.assertEqual(commands, [])
+
+        engine.composing = True
+        self.assertTrue(
+            engine.do_process_key_event(ibus_taigi.IBus.KEY_BackSpace, 0, 0)
+        )
+        self.assertEqual(commands, ["backspace"])
+
+    def test_space_is_only_consumed_while_composing(self):
+        engine = ibus_taigi.TaigiEngine.__new__(ibus_taigi.TaigiEngine)
+        engine.language_mode = "taigi"
+        engine.composing = False
+        engine.candidates = []
+        commands = []
+        engine.apply = commands.append
+        engine.shift_tap = ibus_taigi.ShiftTapTracker(clock=iter([]).__next__)
+
+        self.assertFalse(engine.do_process_key_event(ibus_taigi.IBus.KEY_space, 0, 0))
+        self.assertEqual(commands, [])
+
+        engine.composing = True
+        self.assertTrue(engine.do_process_key_event(ibus_taigi.IBus.KEY_space, 0, 0))
+        self.assertEqual(commands, ["select=0"])
+
     def test_shift_tap_toggles_language_mode(self):
         engine = ibus_taigi.TaigiEngine.__new__(ibus_taigi.TaigiEngine)
         engine.language_mode = "taigi"
@@ -62,6 +98,30 @@ class IBusEventTest(unittest.TestCase):
             )
         )
         self.assertEqual(engine.language_mode, "english")
+
+    def test_shift_tap_clears_active_composition(self):
+        engine = ibus_taigi.TaigiEngine.__new__(ibus_taigi.TaigiEngine)
+        engine.language_mode = "taigi"
+        engine.composing = True
+        engine.candidates = ["residue"]
+        commands = []
+        engine.apply = commands.append
+        engine.shift_tap = ibus_taigi.ShiftTapTracker(
+            clock=iter([1.0, 1.1]).__next__
+        )
+
+        self.assertFalse(engine.do_process_key_event(ibus_taigi.IBus.KEY_Shift_L, 0, 0))
+        self.assertFalse(
+            engine.do_process_key_event(
+                ibus_taigi.IBus.KEY_Shift_L,
+                0,
+                ibus_taigi.IBus.ModifierType.RELEASE_MASK,
+            )
+        )
+        self.assertEqual(commands, ["reset"])
+        self.assertEqual(engine.language_mode, "english")
+        self.assertFalse(engine.composing)
+        self.assertEqual(engine.candidates, [])
 
     def test_shift_plus_letter_is_not_a_mode_switch(self):
         engine = ibus_taigi.TaigiEngine.__new__(ibus_taigi.TaigiEngine)

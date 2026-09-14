@@ -109,7 +109,7 @@ class TaigiEngine(IBus.Engine):
     def toggle_language_mode(self):
         """Switch between Taigi composition and the host's normal English input."""
         if self.composing:
-            self.apply("commit")
+            self.apply("reset")
         self.language_mode = "english" if self.language_mode == "taigi" else "taigi"
         self.candidates = []
         self.composing = False
@@ -207,16 +207,20 @@ class TaigiEngine(IBus.Engine):
             self.apply("reset")
             return True
         if keyval == IBus.KEY_BackSpace:
-            self.apply("backspace")
-            return True
+            if self.composing:
+                self.apply("backspace")
+                return True
+            return False
         if keyval in (IBus.KEY_Return, IBus.KEY_KP_Enter):
             if self.composing:
                 self.apply("commit")
                 return True
             return False
-        if keyval == IBus.KEY_space and self.composing:
-            self.apply("select=0")
-            return True
+        if keyval == IBus.KEY_space:
+            if self.composing:
+                self.apply("select=0")
+                return True
+            return False
         index = self.candidate_slot_for_key(keyval, state)
         if index is not None and index < len(self.candidates):
             self.apply("select=" + str(index))

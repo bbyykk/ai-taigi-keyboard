@@ -28,10 +28,10 @@ fn config(input_mode: &str) -> AppConfig {
         input_mode: input_mode.into(),
         oo_doubletap_enabled: true,
         nn_doubletap_enabled: true,
-        is_translate_swapped: false,
+        is_translate_swapped: true,
         is_association_recording_enabled: false,
         platform_id: Platform::Macos as i32,
-        output_both_scripts: true,
+        output_both_scripts: false,
         candidate_display_mode: 1,
     }
 }
@@ -64,6 +64,24 @@ fn dispatch(req: ComposingRequest, state: &mut State) -> String {
         }
     }
     out
+}
+
+fn fetch_candidates(state: &mut State) -> String {
+    dispatch(
+        ComposingRequest {
+            method: Some(composing_request::Method::FetchAtPos(
+                protos::engine::FetchAtPos {
+                    position: 0,
+                    frequency_entries: Vec::new(),
+                    now_ms: 0,
+                    custom_entries: Vec::new(),
+                    enabled_sources_bitmask: 0,
+                    literal_roman_candidate_disabled: false,
+                },
+            )),
+        },
+        state,
+    )
 }
 
 fn escape(value: &str) -> String {
@@ -119,13 +137,16 @@ pub extern "C" fn taigi_linux_command(command: *const c_char) -> *mut c_char {
         command if command.starts_with("append=") => {
             let mut result = dispatch(ComposingRequest { method: Some(composing_request::Method::Append(protos::engine::Append { char: unescape(&command[7..]) })) }, &mut state);
             result.push_str(&dispatch(ComposingRequest { method: Some(composing_request::Method::EnterContinuous(Default::default())) }, &mut state));
-            result.push_str(&dispatch(ComposingRequest { method: Some(composing_request::Method::FetchAtPos(protos::engine::FetchAtPos { position: 0, frequency_entries: Vec::new(), now_ms: 0, custom_entries: Vec::new(), enabled_sources_bitmask: 0, literal_roman_candidate_disabled: false })) }, &mut state));
+            result.push_str(&fetch_candidates(&mut state));
             result
         }
         command if command.starts_with("select=") => {
             let index: usize = command[7..].parse().unwrap_or(0);
             let (display, end, syllables, canonical) = state.candidates.get(index).cloned().unwrap_or_default();
-            dispatch(ComposingRequest { method: Some(composing_request::Method::CommitContinuous(protos::engine::CommitContinuous { display_text: display, consumed_bytes: end, syllable_count: syllables, canonical_text: String::new(), association_tl: canonical })) }, &mut state)
+            state.candidates.clear();
+            let mut result = dispatch(ComposingRequest { method: Some(composing_request::Method::CommitContinuous(protos::engine::CommitContinuous { display_text: display, consumed_bytes: end, syllable_count: syllables, canonical_text: String::new(), association_tl: canonical })) }, &mut state);
+            result.push_str(&fetch_candidates(&mut state));
+            result
         }
         _ => "error=unknown-command\n".into(),
     };
@@ -139,6 +160,13 @@ pub extern "C" fn taigi_linux_free(value: *mut c_char) { if !value.is_null() { u
 mod tests {
     use super::*;
     use std::ffi::CString;
+
+    #[test]
+    fn linux_hanji_output_does_not_request_roman_word_spacing() {
+        let config = config("tl");
+        assert!(config.is_translate_swapped);
+        assert!(!config.output_both_scripts);
+    }
 
     #[test]
     fn initializes_dictionary_and_composes() {
