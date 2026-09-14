@@ -23,6 +23,12 @@ Space selects the first candidate, number keys or a mouse click select a
 candidate, Enter commits the current preedit, Backspace edits it, and Escape
 cancels it. `Ctrl+Shift+1`, `Ctrl+Shift+2`, and `Ctrl+Shift+3` select TL, POJ,
 and TPS respectively.
+In the IBus engine, tap Shift on its own (under 500 ms, with no other key in
+between) to switch between Taigi and English input; holding Shift for a capital
+letter does not switch modes. Caps Lock remains the desktop's letter-case
+control.
+While the candidate list is visible, `q w d f z x v y ;` select candidates 1–9;
+numeric keys remain available for TL/POJ tone input.
 
 The package currently installs the bundled dictionary artifacts and the
 `dictionary/LICENSE` file must accompany any redistribution. The repository's
