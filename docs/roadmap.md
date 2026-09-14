@@ -3,20 +3,110 @@
 > **Type**: Planning (forward-looking)
 > **Keywords**: `roadmap`, `planning`, `released versions`, `deferred items`
 > **Status**: Active
-> **Last updated**: 2026-09-08 (added the desktop custom-font phases)
+> **Last updated**: 2026-09-14 (added the Linux desktop parity plan)
 
 ---
 
 ## Summary
 
 - **Forward-looking work items only.** Shipped detail lives in `docs/releases/<version>/plan.md` + `changelog/<version>.md` + Claude auto-memory.
-- **Active**: none — kautian subcollections shipped v3.6.0.
+- **Active**: Linux desktop parity; existing version-scoped items below retain
+  their own status.
 - **Deferred TODO (1)**: keyboard theme picker. All other prior candidates closed 2026-06-01 (USER).
 - **Release scope / timing / tag is user-gated** per [`~/.claude/rules/diagnosis-discipline.md` § No unilateral release scope].
 
 ---
 
 ## Active / In-flight items
+
+### Linux desktop parity with Windows (USER-scoped 2026-09-14; no release assigned)
+
+**Status**: Plan complete, implementation not started. The Linux Backspace
+pass-through fix is a standalone pre-plan repair and is not counted as a phase
+below.
+
+**Objective**: make Taigi Keyboard on Linux a complete desktop input method,
+using the Windows implementation as the observable-behavior reference while
+keeping all implementation Linux-specific. iOS, Android, macOS, Windows, and
+shared-engine behavior are out of scope unless the USER separately approves a
+cross-platform round.
+
+**Frontend priority (USER 2026-09-14)**: IBus is the primary delivery path.
+Fcitx remains in the completeness target but is low priority and must not block
+IBus work. Fcitx catches up after the IBus daily-driver surface is complete.
+
+**Current baseline**: IBus and Fcitx 5 expose TL / POJ / TPS composition,
+dictionary candidates, candidate selection, commit, reset, and Backspace over
+the shared Rust engine. Linux still has hard-coded engine settings, one global
+FFI state, no persistent learning or custom dictionary, no next-word UI, no
+settings application, no package/update channel, and only a small IBus unit-test
+surface. The detailed baseline remains in
+[`docs/linux-ubuntu-port.md`](linux-ubuntu-port.md).
+
+#### Architectural direction
+
+- **One Linux application service, IBus first.** IBus is the active frontend;
+  Fcitx later calls the same Linux-only Rust orchestration layer for session
+  state, settings, candidate presentation, learning, and persistence.
+  Python/GObject and C++/Fcitx code translate host events only; they do not
+  independently implement input policy.
+- **Per-input-context sessions.** Replace the process-global composing state
+  with opaque Linux session handles owned by each IBus/Fcitx input context.
+  Focus changes, two simultaneous applications, reset, and frontend restart
+  must never leak composition or candidates between clients.
+- **Existing engine contracts stay authoritative.** Linux consumes current
+  composing, lexicon, next-word, phonetics, and ranking APIs. A missing engine
+  capability is reported as a separate cross-platform proposal, not patched
+  into shared code during this Linux plan.
+- **XDG-native user data.** Settings and databases live under the appropriate
+  XDG config/data/state directories, use atomic replacement or SQLite
+  transactions, and preserve Taiwanese word identity as the `(hanzi, tl)` pair.
+- **Behavioral parity, native presentation.** Linux matches Windows outcomes
+  for composing, candidates, learning, and settings. GTK/libadwaita, IBus, and
+  Fcitx APIs remain Linux-native; the Windows WinUI/TSF implementation is a
+  reference, not code to transplant.
+
+#### Dependency-ordered rounds
+
+| Round | Scope | Exit criteria |
+|---|---|---|
+| L0 — Reproducible IBus baseline | Add one command that builds, installs, restarts IBus, selects Taigi, and reports loaded binary paths/versions. Preserve the USER workflow: modify → build → install → restart → live verify. Record the missing Fcitx development dependency without making it a gate. | A clean checkout can install and restart the IBus frontend deterministically; failures identify the exact missing dependency or process; Fcitx absence does not fail the IBus path. |
+| L1 — Session-safe Linux core | Introduce Linux-only opaque session create/destroy/reset/dispatch APIs; move input mode, candidates, generation, and composing state out of the global singleton; make each IBus input context own one session. Keep the API frontend-neutral for later Fcitx adoption. Add structured response types or a versioned protocol so future effects cannot be silently ignored. | Two concurrent editors keep independent preedit/candidates; focus-out/reset destroys or clears the correct session; malformed commands fail without crashing the daemon. |
+| L2 — IBus input and candidate behavior parity | Complete printable-key classification, modifier/shortcut pass-through, Shift-tap language switching, Standard/Telex candidate-slot behavior when available through existing engine APIs, paging, mouse selection, cursor placement, candidate-window visibility, punctuation/Space/Enter/Escape semantics, and Unicode-safe Backspace. | IBus passes the Windows behavioral matrix; Idle keys always reach the host; composing keys never double-insert; candidate selection commits the same text as Windows for TL/POJ/TPS. |
+| L3 — Persistent settings foundation | Define a Linux settings model and schema with defaults/migrations; watch for changes without restarting the desktop session; expose input mode, tone options, display order/both-scripts, candidate display mode/window toggle, auto-space, dictionary toggles, association recording, and Linux shortcut choices supported by current engine contracts. Provide a CLI first so behavior is testable before UI. | Settings survive logout/reboot, invalid files fall back safely, migrations preserve user choices, and both frontends observe changes without divergent caches. |
+| L4 — User data and dictionary parity | Add Linux-only stores for user frequency, word associations, and custom dictionary; feed frequency/custom rows into candidate fetch and route learning effects back to storage. Add custom-dictionary add/edit/delete/import/export and dictionary-source filtering. | Ranking learns across restarts; `(hanzi, tl)` heterophones remain distinct; association learning and source toggles match Windows outcomes; corrupt/unavailable stores degrade to system-dictionary input. |
+| L5 — Next-word integration | Route existing next-word intents/effects, persist associations, query predictions asynchronously, cancel stale generations, and render prediction candidates through the shared Linux candidate model. | Predictions appear only in eligible states, never record on Backspace, disappear on context reset, and stale async results cannot replace current candidates. |
+| L6 — Linux settings application | Build a native settings application over L3/L4: General, Appearance, Shortcuts, Custom Dictionary, Dictionary Sources, Font Management, and Dictionary Search. Follow Linux desktop conventions and accessibility APIs rather than cloning Windows layouts. | Every supported setting is discoverable and keyboard accessible; changes apply live; destructive user-data actions require confirmation; UI and CLI edit the same schema. |
+| L7 — Candidate presentation and fonts | Add horizontal/vertical/expandable presentation where supported, paging indicators, theme/system dark mode, scale-aware placement, bundled/custom font selection, and multi-monitor/HiDPI positioning for Wayland and X11. | IBus candidate windows remain attached to the caret, readable at supported scales, and consistent between GTK/Qt hosts. |
+| L8 — Fcitx catch-up (low priority) | Repair/document the Fcitx development dependency, adopt the session-safe Linux service, and port the completed L2–L7 behavior without duplicating policy in C++. | Fcitx passes the same claimed-feature matrix as IBus; its absence or build failure never blocks earlier IBus rounds. |
+| L9 — Packaging and lifecycle | Produce uninstall-safe `.deb` packaging for binaries, metadata, dictionaries, licenses, settings app, and dependencies; define upgrade/migration behavior and a versioned update-notification mechanism appropriate for Linux distributions. Package IBus as required and Fcitx as an optional component. | Install/upgrade/uninstall are repeatable; user data survives upgrades/uninstall by policy; no stale daemon keeps an old library loaded; package contents and licenses are validated. |
+| L10 — Release-quality verification | Add Linux-core unit tests, FFI contract tests, IBus event tests, packaging tests, and a real-session dogfood matrix across GNOME Wayland/X11, GTK, Qt, Electron, browsers, terminals, password fields, and two simultaneous editors. Run the Fcitx matrix when L8 is in the chosen completion scope. | All automated gates pass and every required IBus dogfood row has observed evidence; Fcitx evidence is required only after L8 is activated; remaining platform limitations are factual findings presented to the USER for scope decisions. |
+
+#### Round rules and boundaries
+
+- Each round is independently reviewable and ends with source change, build,
+  install, active-frontend restart, and live verification. Automated tests run
+  at the repository workflow point specified by the project rules.
+- IBus behavior lands first. Linux orchestration and policy must remain
+  frontend-neutral so L8 can add Fcitx without redesigning or duplicating it.
+- Do not copy Windows storage or UI crates into Linux. Match their contracts and
+  data semantics with Linux-owned modules so Windows cannot regress from Linux
+  work.
+- Do not assign these rounds to a version, date, release, or package channel
+  without explicit USER direction.
+
+#### Priority checkpoints
+
+1. **Usable and trustworthy typing**: L0–L2.
+2. **Daily-driver adaptation**: L3–L5.
+3. **Complete IBus desktop product**: L6–L7, L9–L10.
+4. **Low-priority Fcitx parity**: L8, then its L10 matrix.
+
+The primary plan is complete when the L10 matrix demonstrates
+Windows-equivalent observable behavior for every feature the IBus frontend
+claims. Fcitx completeness remains a separate low-priority checkpoint.
+
+---
 
 ### v3.6.1 — 使用者資料跨輸入模式 key 一致性 (USER-scoped 2026-06-03)
 
