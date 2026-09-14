@@ -114,7 +114,13 @@ public:
             return;
         }
         if (key.sym() == FcitxKey_Escape) { state->reset(); event.filterAndAccept(); return; }
-        if (key.sym() == FcitxKey_BackSpace) { state->update("backspace"); event.filterAndAccept(); return; }
+        if (key.sym() == FcitxKey_BackSpace) {
+            if (state->composing()) {
+                state->update("backspace");
+                event.filterAndAccept();
+            }
+            return;
+        }
         int selection = key.digitSelection();
         if (state->composing() && selection >= 0 && static_cast<size_t>(selection) < state->candidateCount()) {
             state->update("select=" + std::to_string(selection)); event.filterAndAccept(); return;
