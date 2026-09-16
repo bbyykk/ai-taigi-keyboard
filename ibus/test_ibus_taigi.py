@@ -2,6 +2,7 @@ import importlib.machinery
 import importlib.util
 import pathlib
 import unittest
+from unittest import mock
 
 
 MODULE_PATH = pathlib.Path(__file__).with_name("ibus-taigi")
@@ -12,6 +13,23 @@ SPEC.loader.exec_module(ibus_taigi)
 
 
 class IBusEventTest(unittest.TestCase):
+    def test_component_started_by_ibus_claims_xml_name(self):
+        bus = mock.Mock()
+        ibus = mock.Mock()
+        ibus.Bus.return_value = bus
+        loop = mock.Mock()
+        glib = mock.Mock()
+        glib.MainLoop.return_value = loop
+
+        with mock.patch.object(ibus_taigi, "IBus", ibus), \
+                mock.patch.object(ibus_taigi, "GLib", glib), \
+                mock.patch.object(ibus_taigi, "Factory"):
+            ibus_taigi.main()
+
+        bus.request_name.assert_called_once_with("org.taigikeyboard.IBus", 0)
+        bus.register_component.assert_not_called()
+        loop.run.assert_called_once_with()
+
     def test_delete_response_deletes_one_character_from_document(self):
         class FakeEngine:
             rust = type("Rust", (), {"command": lambda self, _: "preedit=\ncomposing=false\ndelete=1\n"})()

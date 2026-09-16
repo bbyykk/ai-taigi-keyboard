@@ -259,25 +259,9 @@ def main():
     IBus.init()
     bus = IBus.Bus()
     factory = Factory(bus)
-    component = IBus.Component(
-        name="org.taigikeyboard.IBus",
-        description="Taigi Keyboard IBus Engine",
-        version="0.1.0",
-        license="Apache-2.0",
-        author="Taigi Keyboard contributors",
-        homepage="https://github.com/taigikeyboard/taigikeyboard",
-    )
-    component.add_engine(IBus.EngineDesc(
-        name="taigi",
-        longname="Taigi Keyboard",
-        description="Taiwanese input method",
-        language="taigi",
-        license="Apache-2.0",
-        author="Taigi Keyboard contributors",
-        icon="input-keyboard",
-        layout="us",
-    ))
-    bus.register_component(component)
+    # IBus starts this process from taigi.xml, which already registers the
+    # component. Claim its name so IBus can find this factory on first use.
+    bus.request_name("org.taigikeyboard.IBus", 0)
     GLib.MainLoop().run()
 
 
